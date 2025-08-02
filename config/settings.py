@@ -38,6 +38,7 @@ class BotConfig:
     TTS_ENDPOINT = os.getenv("TTS_ENDPOINT")
     TTS_VOICE_NAME = os.getenv("TTS_VOICE_NAME")
     TTS_OUTPUT_FORMAT = os.getenv("TTS_OUTPUT_FORMAT")
+    AUDIO_OUTPUT_DIR = os.getenv("AUDIO_OUTPUT_DIR")
     
     # 缘分居 API 端点
     YUANFENJU_ENDPOINTS = {

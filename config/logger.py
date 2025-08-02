@@ -4,18 +4,40 @@
 """
 import os
 import logging
+import glob
+from datetime import datetime, timedelta
+from pathlib import Path
 from logging.handlers import RotatingFileHandler
 from typing import Optional
 
 # 从环境变量获取日志配置
 LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO").upper()
-LOG_FILE = os.getenv("LOG_FILE", "mystical_oracle.log")
+LOG_DIR = os.getenv("LOG_DIR", "logs")
+LOG_RETENTION_DAYS = int(os.getenv("LOG_RETENTION_DAYS", "30"))
+
+# 确保日志目录存在
+Path(LOG_DIR).mkdir(parents=True, exist_ok=True)
 
 
 class Logger:
     """统一日志管理类"""
     
     _loggers = {}
+    
+    @classmethod
+    def _cleanup_old_logs(cls) -> None:
+        """清理超过指定天数的日志文件"""
+        try:
+            cutoff_date = datetime.now() - timedelta(days=LOG_RETENTION_DAYS)
+            log_pattern = os.path.join(LOG_DIR, "*.log*")
+            
+            for log_file in glob.glob(log_pattern):
+                file_path = Path(log_file)
+                if file_path.stat().st_mtime < cutoff_date.timestamp():
+                    file_path.unlink()
+                    print(f"已删除过期日志文件: {log_file}")
+        except Exception as e:
+            print(f"清理日志文件时出错: {e}")
     
     @classmethod
     def get_logger(cls, name: str, log_file: Optional[str] = None) -> logging.Logger:
@@ -43,10 +65,15 @@ class Logger:
         console_handler.setFormatter(formatter)
         logger.addHandler(console_handler)
         
-        # 文件处理器（带轮转）
-        file_name = log_file or LOG_FILE
+        # 文件处理器（带轮转），使用日期命名
+        if not log_file:
+            date_str = datetime.now().strftime("%Y%m%d")
+            log_file = os.path.join(LOG_DIR, f"mystical_oracle_{date_str}.log")
+        else:
+            log_file = os.path.join(LOG_DIR, log_file)
+            
         file_handler = RotatingFileHandler(
-            file_name,
+            log_file,
             maxBytes=10 * 1024 * 1024,  # 10MB
             backupCount=5,
             encoding='utf-8'
@@ -54,6 +81,9 @@ class Logger:
         file_handler.setLevel(getattr(logging, LOG_LEVEL, logging.INFO))
         file_handler.setFormatter(formatter)
         logger.addHandler(file_handler)
+        
+        # 清理旧日志文件
+        cls._cleanup_old_logs()
         
         # 缓存日志器
         cls._loggers[name] = logger

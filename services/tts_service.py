@@ -4,6 +4,7 @@ Mystical Oracle TTS Service - 文字转语音服务模块
 """
 import asyncio
 import requests
+import os
 from typing import Optional
 from pathlib import Path
 
@@ -20,6 +21,10 @@ class TTSService:
         self.endpoint = config.TTS_ENDPOINT
         self.voice_name = config.TTS_VOICE_NAME
         self.output_format = config.TTS_OUTPUT_FORMAT
+        
+        # 确保音频目录存在
+        self.audio_dir = Path(config.AUDIO_OUTPUT_DIR)
+        self.audio_dir.mkdir(parents=True, exist_ok=True)
     
     def synthesize_speech_background(self, text: str, uid: str, mood: str = "default") -> None:
         """后台语音合成任务"""
@@ -57,13 +62,13 @@ class TTSService:
             )
             
             if response.status_code == 200:
-                # 保存音频文件
-                audio_path = f"{uid}.mp3"
+                # 保存音频文件到统一目录
+                audio_path = self.audio_dir / f"{uid}.mp3"
                 with open(audio_path, "wb") as f:
                     f.write(response.content)
                 
                 tts_logger.info(f"语音合成成功，音频已保存为: {audio_path}")
-                return audio_path
+                return str(audio_path)
             else:
                 tts_logger.error(f"TTS API 请求失败: {response.status_code}")
                 tts_logger.error(f"错误信息: {response.text}")
@@ -87,7 +92,7 @@ class TTSService:
     
     def get_audio_file_path(self, uid: str) -> Path:
         """获取音频文件路径"""
-        return Path(f"{uid}.mp3")
+        return self.audio_dir / f"{uid}.mp3"
 
 
 # 全局 TTS 服务实例

@@ -1,0 +1,114 @@
+services:
+  # 神秘预言师主应用
+  mystical-oracle:
+    build: .
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    environment:
+      - REDIS_URL=redis://redis:6379
+      - QDRANT_PATH=/app/qdrant_data
+      - OLLAMA_BASE_URL=http://ollama:11434
+      - OLLAMA_MODEL=qwen3:8b
+    volumes:
+      - ./logs:/app/logs
+      - ./audio:/app/audio
+      - qdrant_data:/app/qdrant_data
+    depends_on:
+      - redis
+      - qdrant
+      - ollama
+    networks:
+      - mystical-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  # Redis 缓存服务
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - mystical-network
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Qdrant 向量数据库
+  qdrant:
+    image: qdrant/qdrant:latest
+    ports:
+      - "6333:6333"
+      - "6334:6334"
+    volumes:
+      - qdrant_storage:/qdrant/storage
+    environment:
+      - QDRANT__SERVICE__HTTP_PORT=6333
+      - QDRANT__SERVICE__GRPC_PORT=6334
+    networks:
+      - mystical-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:6333/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Ollama 本地大语言模型服务
+  ollama:
+    image: ollama/ollama:latest
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    environment:
+      - OLLAMA_HOST=0.0.0.0
+    networks:
+      - mystical-network
+    restart: unless-stopped
+    entrypoint: [ "sh", "-c" ]
+    command: >
+      "
+        ollama serve &
+        sleep 10 &&
+        echo '=========Pulling qwen3:8b...=========' &&
+        ollama pull qwen3:8b &&
+        echo '=========Pulling qwen3:8b END========' &&
+        echo '=========bge-m3:latest...============' &&
+        ollama pull bge-m3:latest &&
+        echo '=========bge-m3:latest END===========' &&
+        tail -f /dev/null
+      "
+    healthcheck:
+      test: [ "CMD", "ollama", "list" ]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
+
+networks:
+  mystical-network:
+    driver: bridge
+
+volumes:
+  redis_data:
+    driver: local
+  qdrant_data:
+    driver: local
+  qdrant_storage:
+    driver: local
+  ollama_data:
+    driver: local

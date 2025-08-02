@@ -219,4 +219,4 @@ if __name__ == '__main__':
     server_logger.info(f"📍 服务地址: http://localhost:8000")
     server_logger.info(f"🌐 API 文档: http://localhost:8000/docs")
     
-    uvicorn.run(app, host="localhost", port=8000)
+    uvicorn.run(app, host="0.0.0.0", port=8000)

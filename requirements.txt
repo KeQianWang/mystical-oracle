@@ -1,0 +1,56 @@
+# Mystical Oracle 神秘预言师 - Dependencies
+# Core framework dependencies
+fastapi==0.116.1
+uvicorn==0.35.0
+starlette==0.47.2
+
+# LangChain framework
+langchain==0.3.26
+langchain-community==0.3.27
+langchain-core==0.3.69
+langchain-ollama==0.3.5
+langchain-qdrant==0.2.0
+langchain-text-splitters==0.3.8
+
+# Database and storage
+redis==6.2.0
+qdrant-client==1.15.0
+
+# Data validation and parsing
+pydantic==2.11.7
+pydantic-settings==2.10.1
+
+# HTTP requests and networking
+requests==2.32.4
+httpx==0.28.1
+aiohttp==3.12.14
+
+# Text processing and NLP
+beautifulsoup4==4.13.4
+lxml==4.9.4
+
+# Search API
+google_search_results==2.4.2
+
+# Authentication and security
+cryptography==44.0.3
+
+# Configuration and environment
+python-dotenv==1.1.1
+PyYAML==6.0.2
+
+# Utility libraries
+click==8.2.1
+tenacity==9.1.2
+python-dateutil==2.9.0.post0
+
+# Optional dependencies
+# Azure Cognitive Services (for TTS if enabled)
+azure-cognitiveservices-speech==1.45.0
+
+# Text analysis (optional)
+azure-ai-textanalytics==5.3.0
+
+# Async support
+anyio==4.9.0
+websockets==15.0.1

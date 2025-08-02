@@ -193,7 +193,6 @@ Desktop.ini
 *.m4a
 
 # Log files
-*.log
 
 # Configuration files with secrets
 config.json

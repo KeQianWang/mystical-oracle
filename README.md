@@ -78,6 +78,9 @@ mystical-oracle/
    # 模型配置
    OLLAMA_MODEL=qwen2.5:latest
    OLLAMA_BASE_URL=http://localhost:11434
+
+   # LangSmith 监控配置
+   LANGSMITH_API_KEY=your_langsmithapi_key_here
    ```
 
 4. **启动外部服务**

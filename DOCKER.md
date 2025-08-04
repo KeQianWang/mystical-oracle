@@ -32,6 +32,7 @@ MICROSOFT_TTS_KEY=your_azure_tts_key
 
 ```bash
 # 构建并启动所有服务
+cd /Users/king/Develop/self/mystical-oracle
 docker-compose up -d
 
 # 查看服务状态
@@ -109,24 +110,24 @@ docker-compose exec mystical-oracle bash
 1. **Ollama 模型下载失败**
    ```bash
    # 手动下载模型
-   docker-compose exec ollama ollama pull qwen2.5:latest
+docker-compose exec ollama ollama pull qwen2.5:latest
    ```
 
 2. **端口冲突**
    ```bash
    # 修改 docker-compose.yml 中的端口映射
-   ports:
-     - "8001:8000"  # 将宿主机端口改为 8001
+ports:
+  - "8001:8000"  # 将宿主机端口改为 8001
    ```
 
 3. **内存不足**
    ```bash
    # 增加 Docker 内存限制或使用更小的模型
-   # 在 docker-compose.yml 中添加:
-   deploy:
-     resources:
-       limits:
-         memory: 4G
+# 在 docker-compose.yml 中添加:
+deploy:
+  resources:
+    limits:
+      memory: 4G
    ```
 
 ### 日志查看
@@ -175,6 +176,14 @@ deploy:
 
 ## 扩展部署
 
+### 单容器部署
+
+如果您需要更简单的部署方式，可以使用单容器部署：
+
+```bash
+docker-compose -f docker-compose.single.yml up -d
+```
+
 ### 多实例部署
 
 ```bash
@@ -202,16 +211,14 @@ server {
 }
 ```
 
-## 安全建议
+## 部署注意事项
 
-1. **不要在生产环境暴露所有端口**
-2. **使用强密码和 API 密钥**
-3. **启用 HTTPS**
-4. **定期更新镜像**
-5. **配置防火墙规则**
+- 确保防火墙已开放所需端口
+- 在生产环境中，建议使用 HTTPS 加密通信
+- 定期备份持久化数据卷
+- 对于高流量场景，考虑使用 Kubernetes 进行容器编排
+- 监控系统资源使用情况，及时调整资源限制
 
-```bash
-# 只暴露必要端口
-ports:
-  - "127.0.0.1:8000:8000"  # 只允许本地访问
-```
+---
+
+使用 Docker 部署可以大大简化环境配置和依赖管理，让您专注于使用和扩展 Mystical Oracle 服务。

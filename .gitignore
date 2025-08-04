@@ -203,3 +203,5 @@ secrets.json
 
 # Local development
 local_*
+.python-version
+qdrant_data

@@ -21,20 +21,26 @@ mystical-oracle/
 ├── agent.py              # 核心 Agent 类
 ├── server.py             # FastAPI Web 服务器
 ├── config/               # 配置管理
-│   ├── settings.py       # 系统配置
-│   └── keys.py          # API 密钥管理
-├── prompts/             # 提示词模板
-│   ├── system_prompts.py # 系统提示词
-│   └── mood_prompts.py  # 情绪相关提示词
-├── services/            # 业务服务
-│   ├── tools.py         # 工具函数集合
-│   └── tts_service.py   # 语音合成服务
-├── models/              # 数据模型
-│   └── user.py          # 用户数据模型
-├── utils/               # 工具函数
-│   └── helpers.py       # 辅助函数
-├── requirements.txt     # 依赖包列表
-└── README.md           # 项目说明文档
+│   ├── __init__.py
+│   ├── logger.py
+│   └── settings.py       # 系统配置和密钥管理
+├── prompts/              # 提示词模板
+│   ├── __init__.py
+│   ├── mood_prompts.py   # 情绪相关提示词
+│   └── system_prompts.py # 系统提示词
+├── services/             # 业务服务
+│   ├── tools.py          # 工具函数集合
+│   └── tts_service.py    # 语音合成服务
+├── models/               # 数据模型
+│   └── user.py           # 用户数据模型
+├── utils/                # 工具函数
+│   └── helpers.py        # 辅助函数
+├── requirements.txt      # 依赖包列表
+├── README.md             # 项目说明文档
+├── DOCKER.md             # Docker 部署文档
+├── Dockerfile            # Docker 构建文件
+├── docker-compose.yml    # Docker Compose 配置
+└── docker-compose.single.yml # 单容器部署配置
 ```
 
 ## 环境要求
@@ -48,7 +54,8 @@ mystical-oracle/
 
 1. **克隆项目**
    ```bash
-   cd /Users/king/Develop/self/mystical-oracle
+   git clone <repository-url>
+   cd mystical-oracle
    ```
 
 2. **安装依赖**
@@ -139,7 +146,7 @@ python server.py
 - 系统提示词设置
 
 ### API 密钥管理
-在 `config/keys.py` 中集中管理所有 API 密钥，支持环境变量和默认值。
+所有 API 密钥在 `config/settings.py` 中集中管理，支持环境变量和默认值。
 
 ### 提示词模板
 在 `prompts/` 目录下管理所有提示词模板，便于维护和调整。

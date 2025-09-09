@@ -205,3 +205,4 @@ secrets.json
 local_*
 .python-version
 qdrant_data
+CLAUDE.md

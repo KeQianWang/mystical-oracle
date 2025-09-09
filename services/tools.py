@@ -3,7 +3,6 @@ Mystical Oracle Tools - 神秘预言师工具集
 使用配置管理和更好的错误处理
 """
 import requests
-from typing import Optional
 
 from langchain.agents import tool
 from langchain_community.utilities import SerpAPIWrapper
@@ -11,6 +10,7 @@ from langchain_core.output_parsers import JsonOutputParser, StrOutputParser
 from langchain_core.prompts import ChatPromptTemplate, PromptTemplate
 from langchain_core.runnables import RunnableLambda
 from langchain_ollama import OllamaEmbeddings, ChatOllama, OllamaLLM
+from langchain_openai import OpenAI, ChatOpenAI
 from langchain_qdrant import QdrantVectorStore
 from qdrant_client import QdrantClient
 
@@ -96,8 +96,12 @@ def bazi_cesuan(query: str) -> str:
         
         # 创建模型
         model_config = config.get_model_config()
-        model = ChatOllama(**model_config, format="json")
-        
+        # model = ChatOllama(**model_config, format="json")
+        model = ChatOpenAI(
+            model="gpt-4o-mini",
+            temperature=0.2,
+        )
+
         # 构建处理链
         chain = prompt | model | parser
         data = chain.invoke({"query": query})
@@ -151,8 +155,12 @@ def jiemeng(query: str) -> str:
         
         # 创建关键词提取模型
         model_config = config.get_model_config()
-        llm = OllamaLLM(**model_config)
-        
+        # llm = OllamaLLM(**model_config)
+        llm = OpenAI(
+            model="gpt-4o-mini",
+            temperature=0.2
+        )
+
         # 直接使用统一管理的模板
         dream_prompt_template = SystemPrompts.DREAM_KEYWORD_EXTRACTION_PROMPT
         

@@ -12,6 +12,7 @@ langchain-core==0.3.69
 langchain-ollama==0.3.5
 langchain-qdrant==0.2.0
 langchain-text-splitters==0.3.8
+langchain-openai==0.3.29
 
 # Database and storage
 redis==6.2.0

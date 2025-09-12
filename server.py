@@ -26,7 +26,8 @@ from routers import (
     chat_history,
     knowledge,
     audio,
-    websocket
+    websocket,
+    sessions
 )
 
 # 创建数据库表
@@ -47,6 +48,7 @@ app.include_router(chat_history.router)
 app.include_router(knowledge.router)
 app.include_router(audio.router)
 app.include_router(websocket.router)
+app.include_router(sessions.router)
 
 
 if __name__ == '__main__':

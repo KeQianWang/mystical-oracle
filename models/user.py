@@ -133,3 +133,48 @@ class TokenData(BaseModel):
     """JWT令牌数据模型"""
     user_id: Optional[int] = None
     username: Optional[str] = None
+
+
+class ChatSession(BaseModel):
+    """聊天会话模型"""
+    id: Optional[int] = None
+    user_id: int
+    session_id: str
+    title: str
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
+    is_active: bool = True
+
+    class Config:
+        from_attributes = True
+
+
+class ChatSessionCreate(BaseModel):
+    """创建聊天会话模型"""
+    title: str
+
+
+class ChatSessionUpdate(BaseModel):
+    """更新聊天会话模型"""
+    title: Optional[str] = None
+    is_active: Optional[bool] = None
+
+
+class ChatSessionResponse(BaseModel):
+    """聊天会话响应模型"""
+    id: int
+    session_id: str
+    title: str
+    created_at: datetime
+    updated_at: datetime
+    is_active: bool
+    message_count: Optional[int] = 0
+
+    class Config:
+        from_attributes = True
+
+
+class ChatRequest(BaseModel):
+    """聊天请求模型"""
+    query: str
+    enable_tts: bool = True

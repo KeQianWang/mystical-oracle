@@ -1,6 +1,6 @@
 """
 聊天历史记录接口路由器
-包含会话管理和历史记录相关接口
+包含历史记录查询和统计相关接口
 """
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
@@ -12,23 +12,6 @@ from config.logger import server_logger
 from database.connection import get_db
 
 router = APIRouter(prefix="/chat", tags=["聊天历史"])
-
-
-@router.get("/sessions")
-def get_chat_sessions(
-    current_user = Depends(get_current_active_user),
-    db: Session = Depends(get_db)
-):
-    """获取用户的聊天会话列表"""
-    try:
-        sessions = ChatHistoryService.get_chat_sessions(db, current_user.id)
-        return {
-            "sessions": [ChatHistoryService.session_to_dict(session) for session in sessions]
-        }
-    except Exception as e:
-        error_msg = format_error_message(e, "获取聊天会话列表")
-        server_logger.error(error_msg)
-        raise HTTPException(status_code=500, detail="获取会话列表失败")
 
 
 @router.get("/history")
@@ -70,54 +53,6 @@ def get_session_history(
         error_msg = format_error_message(e, f"获取会话 {session_id} 的聊天历史")
         server_logger.error(error_msg)
         raise HTTPException(status_code=500, detail="获取会话聊天历史失败")
-
-
-@router.put("/session/{session_id}/title")
-def update_session_title(
-    session_id: str,
-    title: str,
-    current_user = Depends(get_current_active_user),
-    db: Session = Depends(get_db)
-):
-    """更新会话标题"""
-    try:
-        session = ChatHistoryService.update_session_title(
-            db, current_user.id, session_id, title
-        )
-        if not session:
-            raise HTTPException(status_code=404, detail="会话不存在")
-        
-        return {
-            "message": "会话标题更新成功",
-            "session": ChatHistoryService.session_to_dict(session)
-        }
-    except HTTPException:
-        raise
-    except Exception as e:
-        error_msg = format_error_message(e, f"更新会话 {session_id} 标题")
-        server_logger.error(error_msg)
-        raise HTTPException(status_code=500, detail="更新会话标题失败")
-
-
-@router.delete("/session/{session_id}")
-def delete_session(
-    session_id: str,
-    current_user = Depends(get_current_active_user),
-    db: Session = Depends(get_db)
-):
-    """删除聊天会话"""
-    try:
-        success = ChatHistoryService.delete_session(db, current_user.id, session_id)
-        if not success:
-            raise HTTPException(status_code=404, detail="会话不存在")
-        
-        return {"message": "会话删除成功"}
-    except HTTPException:
-        raise
-    except Exception as e:
-        error_msg = format_error_message(e, f"删除会话 {session_id}")
-        server_logger.error(error_msg)
-        raise HTTPException(status_code=500, detail="删除会话失败")
 
 
 @router.get("/stats")

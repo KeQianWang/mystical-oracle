@@ -8,7 +8,7 @@ starlette==0.47.2
 langchain==0.3.26
 langsmith==0.4.10
 langchain-community==0.3.27
-langchain-core==0.3.69
+langchain-core==0.3.74
 langchain-ollama==0.3.5
 langchain-qdrant==0.2.0
 langchain-text-splitters==0.3.8
@@ -17,6 +17,9 @@ langchain-openai==0.3.29
 # Database and storage
 redis==6.2.0
 qdrant-client==1.15.0
+sqlalchemy==2.0.36
+pymysql==1.1.1
+alembic==1.14.0
 
 # Data validation and parsing
 pydantic==2.11.7
@@ -36,6 +39,9 @@ google_search_results==2.4.2
 
 # Authentication and security
 cryptography==44.0.3
+python-jose[cryptography]==3.4.0
+passlib[bcrypt]==1.7.4
+bcrypt==4.0.1  # 添加这一行
 
 # Configuration and environment
 python-dotenv==1.1.1

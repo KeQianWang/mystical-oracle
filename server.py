@@ -7,6 +7,8 @@ import os
 import uuid
 from pathlib import Path
 
+from starlette import status
+
 # 设置必要的环境变量
 os.environ.setdefault("USER_AGENT", "Mozilla/5.0 (Mystical Oracle/1.0)")
 
@@ -14,17 +16,32 @@ os.environ.setdefault("USER_AGENT", "Mozilla/5.0 (Mystical Oracle/1.0)")
 project_root = Path(__file__).parent
 sys.path.insert(0, str(project_root))
 
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException, BackgroundTasks
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException, BackgroundTasks, Depends
+from fastapi.security import HTTPBearer
 from fastapi.responses import FileResponse
 from langchain_community.document_loaders import WebBaseLoader
 from langchain_ollama import OllamaEmbeddings
 from langchain_qdrant import Qdrant
 from langchain_text_splitters import RecursiveCharacterTextSplitter
+from sqlalchemy.orm import Session
 
 from agent import Master
 from config.settings import config
 from utils.helpers import validate_user_input, format_error_message
 from config.logger import server_logger
+from database.connection import get_db, create_tables
+from models.user import UserCreate, UserLogin, UserResponse, UserUpdate, Token
+from services.auth import (
+    authenticate_user, 
+    create_user_token, 
+    get_current_active_user,
+    update_last_login
+)
+from services.user_service import UserService
+from services.chat_history_service import ChatHistoryService
+
+# 创建数据库表
+create_tables()
 
 # 创建 FastAPI 应用
 app = FastAPI(
@@ -33,6 +50,9 @@ app = FastAPI(
     version="1.0.0"
 )
 
+# JWT认证
+security = HTTPBearer()
+
 
 @app.get("/")
 def get_root():
@@ -40,17 +60,88 @@ def get_root():
     return {"response": "神秘预言师服务正在运行", "service": "Mystical Oracle"}
 
 
+# 用户认证接口
+@app.post("/auth/register", response_model=UserResponse)
+def register(user_data: UserCreate, db: Session = Depends(get_db)):
+    """用户注册"""
+    try:
+        user = UserService.create_user(db, user_data)
+        return UserService.to_response(user)
+    except HTTPException:
+        raise
+    except Exception as e:
+        error_msg = format_error_message(e, "用户注册")
+        server_logger.error(error_msg)
+        raise HTTPException(status_code=500, detail="注册失败，请稍后再试")
+
+
+@app.post("/auth/login", response_model=Token)
+def login(user_data: UserLogin, db: Session = Depends(get_db)):
+    """用户登录"""
+    try:
+        # 验证用户
+        user = authenticate_user(db, user_data.username, user_data.password)
+        if not user:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="用户名或密码错误",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+        
+        # 更新最后登录时间
+        update_last_login(db, user)
+        
+        # 创建访问令牌
+        return create_user_token(user)
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        error_msg = format_error_message(e, "用户登录")
+        server_logger.error(error_msg)
+        raise HTTPException(status_code=500, detail="登录失败，请稍后再试")
+
+
+@app.get("/auth/me", response_model=UserResponse)
+def get_current_user_info(current_user = Depends(get_current_active_user)):
+    """获取当前用户信息"""
+    return UserService.to_response(current_user)
+
+
+@app.put("/auth/me", response_model=UserResponse)
+def update_current_user(
+    user_data: UserUpdate, 
+    current_user = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    """更新当前用户信息"""
+    try:
+        updated_user = UserService.update_user(db, current_user.id, user_data)
+        return UserService.to_response(updated_user)
+    except HTTPException:
+        raise
+    except Exception as e:
+        error_msg = format_error_message(e, "更新用户信息")
+        server_logger.error(error_msg)
+        raise HTTPException(status_code=500, detail="更新失败，请稍后再试")
+
+
 @app.post("/chat")
-def chat(query: str, background_tasks: BackgroundTasks):
+def chat(
+    query: str, 
+    background_tasks: BackgroundTasks,
+    current_user = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
     """与算命师对话，支持语音合成"""
     try:
         # 验证输入
         if not validate_user_input(query):
             raise HTTPException(status_code=400, detail="输入内容无效")
         
-        # 创建算命师实例并处理对话
-        master = Master()
-        result = master.run(query)
+        # 创建算命师实例并处理对话（使用用户ID作为会话ID）
+        master = Master(session_id=f"user_{current_user.id}")
+        result = master.run(query, user_id=current_user.id)
         
         # 生成唯一 ID 用于音频文件
         unique_id = str(uuid.uuid4())
@@ -100,7 +191,10 @@ def get_audio(audio_id: str):
 
 
 @app.post("/add_urls")
-def add_urls(URL: str):
+def add_urls(
+    URL: str,
+    current_user = Depends(get_current_active_user)
+):
     """添加网页内容到知识库"""
     try:
         # 验证 URL
@@ -129,7 +223,7 @@ def add_urls(URL: str):
             collection_name=qdrant_config["collection_name"],
         )
         
-        server_logger.info(f'成功添加 URL: {URL} 到向量数据库')
+        server_logger.info(f'用户 {current_user.username} 成功添加 URL: {URL} 到向量数据库')
         return {"response": "网页内容添加成功！"}
         
     except Exception as e:
@@ -139,13 +233,13 @@ def add_urls(URL: str):
 
 
 @app.post("/add_pdfs")
-def add_pdfs():
+def add_pdfs(current_user = Depends(get_current_active_user)):
     """添加 PDF 文档（待实现）"""
     return {"response": "PDF 添加功能开发中..."}
 
 
 @app.post("/add_texts")  
-def add_texts():
+def add_texts(current_user = Depends(get_current_active_user)):
     """添加文本内容（待实现）"""
     return {"response": "文本添加功能开发中..."}
 
@@ -159,21 +253,177 @@ def health_check():
         # 检查配置
         config_valid = config.validate_config()
         tts_available = tts_service.is_available()
+        db_available = False
+        
+        # 检查数据库连接
+        try:
+            from database.connection import check_database_connection
+            db_available = check_database_connection()
+        except:
+            db_available = False
         
         return {
-            "status": "healthy" if config_valid else "warning",
+            "status": "healthy" if config_valid and db_available else "warning",
             "config_valid": config_valid,
             "tts_available": tts_available,
+            "database_available": db_available,
             "version": "2.1.0",
             "features": {
                 "chat": True,
                 "tts": tts_available,
                 "knowledge_base": True,
-                "websocket": True
+                "websocket": True,
+                "authentication": True
             }
         }
     except Exception as e:
         return {"status": "unhealthy", "error": str(e)}
+
+
+# 聊天历史记录接口
+@app.get("/chat/sessions")
+def get_chat_sessions(
+    current_user = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    """获取用户的聊天会话列表"""
+    try:
+        sessions = ChatHistoryService.get_chat_sessions(db, current_user.id)
+        return {
+            "sessions": [ChatHistoryService.session_to_dict(session) for session in sessions]
+        }
+    except Exception as e:
+        error_msg = format_error_message(e, "获取聊天会话列表")
+        server_logger.error(error_msg)
+        raise HTTPException(status_code=500, detail="获取会话列表失败")
+
+
+@app.get("/chat/history")
+def get_chat_history(
+    session_id: str = None,
+    skip: int = 0,
+    limit: int = 50,
+    current_user = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    """获取聊天历史记录"""
+    try:
+        history = ChatHistoryService.get_chat_history(
+            db, current_user.id, session_id, skip, limit
+        )
+        return {
+            "history": [ChatHistoryService.to_dict(record) for record in history]
+        }
+    except Exception as e:
+        error_msg = format_error_message(e, "获取聊天历史")
+        server_logger.error(error_msg)
+        raise HTTPException(status_code=500, detail="获取聊天历史失败")
+
+
+@app.get("/chat/session/{session_id}/history")
+def get_session_history(
+    session_id: str,
+    current_user = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    """获取特定会话的聊天历史"""
+    try:
+        history = ChatHistoryService.get_session_history(db, current_user.id, session_id)
+        return {
+            "session_id": session_id,
+            "history": [ChatHistoryService.to_dict(record) for record in history]
+        }
+    except Exception as e:
+        error_msg = format_error_message(e, f"获取会话 {session_id} 的聊天历史")
+        server_logger.error(error_msg)
+        raise HTTPException(status_code=500, detail="获取会话聊天历史失败")
+
+
+@app.put("/chat/session/{session_id}/title")
+def update_session_title(
+    session_id: str,
+    title: str,
+    current_user = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    """更新会话标题"""
+    try:
+        session = ChatHistoryService.update_session_title(
+            db, current_user.id, session_id, title
+        )
+        if not session:
+            raise HTTPException(status_code=404, detail="会话不存在")
+        
+        return {
+            "message": "会话标题更新成功",
+            "session": ChatHistoryService.session_to_dict(session)
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        error_msg = format_error_message(e, f"更新会话 {session_id} 标题")
+        server_logger.error(error_msg)
+        raise HTTPException(status_code=500, detail="更新会话标题失败")
+
+
+@app.delete("/chat/session/{session_id}")
+def delete_session(
+    session_id: str,
+    current_user = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    """删除聊天会话"""
+    try:
+        success = ChatHistoryService.delete_session(db, current_user.id, session_id)
+        if not success:
+            raise HTTPException(status_code=404, detail="会话不存在")
+        
+        return {"message": "会话删除成功"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        error_msg = format_error_message(e, f"删除会话 {session_id}")
+        server_logger.error(error_msg)
+        raise HTTPException(status_code=500, detail="删除会话失败")
+
+
+@app.get("/chat/stats")
+def get_chat_stats(
+    current_user = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    """获取聊天统计信息"""
+    try:
+        stats = ChatHistoryService.get_chat_stats(db, current_user.id)
+        return stats
+    except Exception as e:
+        error_msg = format_error_message(e, "获取聊天统计")
+        server_logger.error(error_msg)
+        raise HTTPException(status_code=500, detail="获取聊天统计失败")
+
+
+@app.get("/chat/recent")
+def get_recent_chats(
+    days: int = 7,
+    current_user = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    """获取最近几天的聊天记录"""
+    try:
+        if days < 1 or days > 30:
+            raise HTTPException(status_code=400, detail="天数必须在1-30之间")
+        
+        recent_chats = ChatHistoryService.get_recent_chats(db, current_user.id, days)
+        return {
+            "days": days,
+            "chats": [ChatHistoryService.to_dict(record) for record in recent_chats]
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        error_msg = format_error_message(e, f"获取最近 {days} 天的聊天记录")
+        server_logger.error(error_msg)
+        raise HTTPException(status_code=500, detail="获取最近聊天记录失败")
 
 
 @app.websocket('/ws')

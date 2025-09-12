@@ -86,7 +86,7 @@ class Master:
             history_messages_key=self.memory_key,
         )
     
-    def run(self, query: str) -> Dict[str, Any]:
+    def run(self, query: str, user_id: int = None) -> Dict[str, Any]:
         """运行算命师对话"""
         try:
             # 情绪分析
@@ -101,11 +101,38 @@ class Master:
             # 执行对话
             result = self.agent_executor.invoke({'input': query}, config=config_obj)
             
+            # 保存聊天历史记录（如果提供了用户ID）
+            if user_id:
+                self._save_chat_history(user_id, query, result.get("output", ""))
+            
             return result
             
         except Exception as e:
             agent_logger.error(f"对话执行出错: {e}")
             return {"output": "老夫此时无法为你算卦，请稍后再试。"}
+    
+    def _save_chat_history(self, user_id: int, user_message: str, assistant_message: str) -> None:
+        """保存聊天历史记录到数据库"""
+        try:
+            from database.connection import get_db_context
+            from services.chat_history_service import ChatHistoryService
+            
+            with get_db_context() as db:
+                ChatHistoryService.add_chat_history(
+                    db=db,
+                    user_id=user_id,
+                    session_id=self.session_id,
+                    user_message=user_message,
+                    assistant_message=assistant_message,
+                    mood=self.current_mood,
+                    message_type="text"
+                )
+            
+            agent_logger.debug(f"聊天历史已保存: user_id={user_id}, session_id={self.session_id}")
+            
+        except Exception as e:
+            agent_logger.error(f"保存聊天历史失败: {e}")
+            # 不影响主要功能，只是记录错误
     
     def _analyze_emotion(self, query: str) -> str:
         """分析用户情绪"""

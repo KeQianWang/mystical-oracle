@@ -24,6 +24,18 @@ class BotConfig:
     QDRANT_COLLECTION_NAME = os.getenv("QDRANT_COLLECTION_NAME")
     REDIS_URL = os.getenv("REDIS_URL")
     
+    # MySQL 数据库配置
+    MYSQL_HOST = os.getenv("MYSQL_HOST")
+    MYSQL_PORT = int(os.getenv("MYSQL_PORT", 3306))
+    MYSQL_USER = os.getenv("MYSQL_USER")
+    MYSQL_PASSWORD = os.getenv("MYSQL_PASSWORD")
+    MYSQL_DATABASE = os.getenv("MYSQL_DATABASE")
+    
+    # JWT 配置
+    JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY")
+    JWT_ALGORITHM = os.getenv("JWT_ALGORITHM", "HS256")
+    JWT_EXPIRE_MINUTES = int(os.getenv("JWT_EXPIRE_MINUTES", 720))  # 12小时
+    
     # Agent 配置
     DEFAULT_SESSION_ID = os.getenv("DEFAULT_SESSION_ID")
     MEMORY_KEY = os.getenv("MEMORY_KEY")
@@ -79,6 +91,26 @@ class BotConfig:
         """获取 Redis 配置"""
         return {
             "url": cls.REDIS_URL
+        }
+
+    @classmethod
+    def get_mysql_config(cls) -> Dict[str, Any]:
+        """获取 MySQL 配置"""
+        return {
+            "host": cls.MYSQL_HOST,
+            "port": cls.MYSQL_PORT,
+            "user": cls.MYSQL_USER,
+            "password": cls.MYSQL_PASSWORD,
+            "database": cls.MYSQL_DATABASE
+        }
+
+    @classmethod
+    def get_jwt_config(cls) -> Dict[str, Any]:
+        """获取 JWT 配置"""
+        return {
+            "secret_key": cls.JWT_SECRET_KEY,
+            "algorithm": cls.JWT_ALGORITHM,
+            "expire_minutes": cls.JWT_EXPIRE_MINUTES
         }
 
     @classmethod

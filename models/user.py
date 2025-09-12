@@ -2,7 +2,9 @@
 Mystical Oracle User Model - 用户数据模型
 优化后的数据模型，使用配置管理
 """
-from pydantic import BaseModel, field_validator
+from datetime import datetime
+from typing import Optional
+from pydantic import BaseModel, EmailStr, field_validator, constr
 from config.settings import config
 
 
@@ -81,3 +83,53 @@ class User(BaseModel):
         if not (0 <= v <= 59):
             raise ValueError('分钟必须在 0-59 之间')
         return v
+
+
+# 新增用户认证相关模型
+class UserCreate(BaseModel):
+    """用户注册模型"""
+    username: constr(min_length=2, max_length=50)
+    email: EmailStr
+    password: constr(min_length=6, max_length=100)
+    nickname: Optional[constr(max_length=50)] = None
+
+
+class UserLogin(BaseModel):
+    """用户登录模型"""
+    username: constr(min_length=3, max_length=50)
+    password: constr(min_length=6, max_length=100)
+
+
+class UserResponse(BaseModel):
+    """用户响应模型"""
+    id: int
+    username: str
+    email: str
+    nickname: Optional[str] = None
+    avatar_url: Optional[str] = None
+    is_active: bool
+    is_admin: bool
+    created_at: datetime
+    last_login_at: Optional[datetime] = None
+
+    class Config:
+        from_attributes = True
+
+
+class UserUpdate(BaseModel):
+    """用户更新模型"""
+    nickname: Optional[constr(max_length=50)] = None
+    avatar_url: Optional[str] = None
+
+
+class Token(BaseModel):
+    """JWT令牌模型"""
+    access_token: str
+    token_type: str = "bearer"
+    expires_in: int
+
+
+class TokenData(BaseModel):
+    """JWT令牌数据模型"""
+    user_id: Optional[int] = None
+    username: Optional[str] = None

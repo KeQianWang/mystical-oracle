@@ -4,28 +4,17 @@ Mystical Oracle Chat History Service - 聊天历史服务
 """
 from typing import List, Optional, Dict, Any
 from datetime import datetime, timedelta, timezone
-
-from langchain_core.output_parsers import StrOutputParser
-from langchain_core.prompts import PromptTemplate
-from langchain_core.runnables import RunnableLambda
-from langchain_openai import OpenAI
 from sqlalchemy.orm import Session
 from sqlalchemy import desc, and_
-from fastapi import HTTPException, status
-
 from models.database import ChatHistory, ChatSession
-from models.user import UserResponse
-from prompts.system_prompts import SystemPrompts
-from services.auth import get_current_active_user
 from config.logger import server_logger
-from utils.helpers import delete_think
 
 
 class ChatHistoryService:
     """聊天历史服务类"""
     
     @staticmethod
-    def create_chat_session(db: Session, user_id: int, session_id: str, title: str = None) -> ChatSession:
+    def create_chat_session(db: Session, user_id: int, session_id: str, title: str = None) -> type[ChatSession] | ChatSession:
         """创建聊天会话"""
         # 检查会话是否已存在
         existing_session = db.query(ChatSession).filter(
@@ -90,7 +79,7 @@ class ChatHistoryService:
         session_id: str = None,
         skip: int = 0,
         limit: int = 50
-    ) -> List[ChatHistory]:
+    ) -> list[type[ChatHistory]]:
         """获取聊天历史记录"""
         query = db.query(ChatHistory).filter(ChatHistory.user_id == user_id)
         
@@ -100,14 +89,14 @@ class ChatHistoryService:
         return query.order_by(desc(ChatHistory.created_at)).offset(skip).limit(limit).all()
     
     @staticmethod
-    def get_chat_sessions(db: Session, user_id: int) -> List[ChatSession]:
+    def get_chat_sessions(db: Session, user_id: int) -> list[type[ChatSession]]:
         """获取用户的所有聊天会话"""
         return db.query(ChatSession).filter(
             ChatSession.user_id == user_id
         ).order_by(desc(ChatSession.updated_at)).all()
     
     @staticmethod
-    def get_session_history(db: Session, user_id: int, session_id: str) -> List[ChatHistory]:
+    def get_session_history(db: Session, user_id: int, session_id: str) -> list[type[ChatHistory]]:
         """获取特定会话的聊天历史"""
         return db.query(ChatHistory).filter(
             and_(ChatHistory.user_id == user_id, ChatHistory.session_id == session_id)
@@ -152,7 +141,7 @@ class ChatHistoryService:
         return False
     
     @staticmethod
-    def get_recent_chats(db: Session, user_id: int, days: int = 7) -> List[ChatHistory]:
+    def get_recent_chats(db: Session, user_id: int, days: int = 7) -> list[type[ChatHistory]]:
         """获取最近几天的聊天记录"""
         since_date = datetime.now(timezone.utc) - timedelta(days=days)
         return db.query(ChatHistory).filter(

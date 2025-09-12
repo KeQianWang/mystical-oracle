@@ -4,7 +4,6 @@ Mystical Oracle Database Connection - 数据库连接
 """
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, Session
-from sqlalchemy.ext.declarative import declarative_base
 from contextlib import contextmanager
 from typing import Generator
 from config.settings import config

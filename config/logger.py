@@ -92,11 +92,10 @@ class Logger:
 
 
 # 为各个模块提供专用日志器
-agent_logger = Logger.get_logger('agent')
 server_logger = Logger.get_logger('server')
+agent_logger = Logger.get_logger('agent')
 tools_logger = Logger.get_logger('tools')
 tts_logger = Logger.get_logger('tts')
-config_logger = Logger.get_logger('config')
 
 # 默认日志器
 logger = Logger.get_logger('mystical_oracle')

@@ -3,7 +3,6 @@
 优化后的工具函数，移除硬编码配置
 """
 import re
-from typing import Any
 
 
 def delete_think(text: str) -> str:
@@ -61,20 +60,3 @@ def validate_user_input(input_text: str, min_length: int = 1, max_length: int = 
     input_text = input_text.strip()
     return min_length <= len(input_text) <= max_length
 
-
-def safe_get_dict_value(dictionary: dict, key: str, default: Any = None) -> Any:
-    """
-    安全地从字典中获取值
-    
-    Args:
-        dictionary: 目标字典
-        key: 键名
-        default: 默认值
-        
-    Returns:
-        字典中的值或默认值
-    """
-    try:
-        return dictionary.get(key, default)
-    except (AttributeError, TypeError):
-        return default

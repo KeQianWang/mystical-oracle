@@ -36,25 +36,6 @@ def get_chat_history(
         raise HTTPException(status_code=500, detail="获取聊天历史失败")
 
 
-@router.get("/session/{session_id}/history")
-def get_session_history(
-    session_id: str,
-    current_user = Depends(get_current_active_user),
-    db: Session = Depends(get_db)
-):
-    """获取特定会话的聊天历史"""
-    try:
-        history = ChatHistoryService.get_session_history(db, current_user.id, session_id)
-        return {
-            "session_id": session_id,
-            "history": [ChatHistoryService.to_dict(record) for record in history]
-        }
-    except Exception as e:
-        error_msg = format_error_message(e, f"获取会话 {session_id} 的聊天历史")
-        server_logger.error(error_msg)
-        raise HTTPException(status_code=500, detail="获取会话聊天历史失败")
-
-
 @router.get("/stats")
 def get_chat_stats(
     current_user = Depends(get_current_active_user),

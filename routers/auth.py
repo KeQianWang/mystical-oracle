@@ -68,7 +68,7 @@ def get_current_user_info(current_user = Depends(get_current_active_user)):
     return UserService.to_response(current_user)
 
 
-@router.put("/me", response_model=UserResponse)
+@router.put("/update_me", response_model=UserResponse)
 def update_current_user(
     user_data: UserUpdate, 
     current_user = Depends(get_current_active_user),

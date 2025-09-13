@@ -18,7 +18,7 @@ from models.user import (
 from services.session_service import SessionService
 from config.logger import server_logger
 
-router = APIRouter(tags=["会话管理"])
+router = APIRouter(prefix="/sessions",tags=["会话管理"])
 
 @router.post("/creat_sessions", response_model=ChatSessionResponse)
 def create_session(
@@ -70,70 +70,7 @@ def get_user_sessions(
         raise HTTPException(status_code=500, detail="获取会话列表失败")
 
 
-@router.get("/default_sessions", response_model=ChatSessionResponse)
-def get_default_session(
-        current_user: UserResponse = Depends(get_current_active_user),
-        db: Session = Depends(get_db)
-):
-    """获取或创建用户的默认会话"""
-    try:
-        session = SessionService.ensure_default_session(db, current_user.id)
-
-        # 获取消息数量
-        message_count = db.query(ChatHistory).filter(
-            ChatHistory.session_id == session.session_id,
-            ChatHistory.user_id == current_user.id
-        ).count()
-
-        return ChatSessionResponse(
-            id=session.id,
-            session_id=session.session_id,
-            title=session.title,
-            created_at=session.created_at,
-            updated_at=session.updated_at,
-            is_active=session.is_active,
-            message_count=message_count
-        )
-    except Exception as e:
-        server_logger.error(f"获取默认会话失败: {e}")
-        raise HTTPException(status_code=500, detail="获取默认会话失败")
-
-
-@router.get("/sessions/{session_id}", response_model=ChatSessionResponse)
-def get_session(
-    session_id: str,
-    current_user: UserResponse = Depends(get_current_active_user),
-    db: Session = Depends(get_db)
-):
-    """获取特定会话信息"""
-    try:
-        session = SessionService.get_session_by_id(db, session_id, current_user.id)
-        if not session:
-            raise HTTPException(status_code=404, detail="会话不存在")
-        
-        # 获取消息数量
-        message_count = db.query(ChatHistory).filter(
-            ChatHistory.session_id == session_id,
-            ChatHistory.user_id == current_user.id
-        ).count()
-        
-        return ChatSessionResponse(
-            id=session.id,
-            session_id=session.session_id,
-            title=session.title,
-            created_at=session.created_at,
-            updated_at=session.updated_at,
-            is_active=session.is_active,
-            message_count=message_count
-        )
-    except HTTPException:
-        raise
-    except Exception as e:
-        server_logger.error(f"获取会话信息失败: {e}")
-        raise HTTPException(status_code=500, detail="获取会话信息失败")
-
-
-@router.put("/sessions/{session_id}", response_model=ChatSessionResponse)
+@router.put("/update/{session_id}", response_model=ChatSessionResponse)
 def update_session(
     session_id: str,
     session_data: ChatSessionUpdate,
@@ -168,7 +105,7 @@ def update_session(
         raise HTTPException(status_code=500, detail="更新会话失败")
 
 
-@router.delete("/sessions/{session_id}")
+@router.delete("/delete/{session_id}")
 def delete_session(
     session_id: str,
     current_user: UserResponse = Depends(get_current_active_user),

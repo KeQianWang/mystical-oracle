@@ -7,7 +7,7 @@ from typing import List, Optional
 from sqlalchemy.orm import Session
 from sqlalchemy import and_, desc, func
 
-from models.database import ChatSession
+from models.database import ChatSession, ChatHistory
 from models.user import ChatSessionCreate, ChatSessionUpdate
 from config.logger import server_logger
 
@@ -88,7 +88,7 @@ class SessionService:
             return False
         
         session.is_active = False
-        session.updated_at = datetime.utcnow()
+        session.updated_at = datetime.now(timezone.utc)
         
         db.commit()
         
@@ -98,9 +98,7 @@ class SessionService:
     @staticmethod
     def get_session_with_message_count(db: Session, user_id: int, skip: int = 0, limit: int = 50) -> List[dict]:
         """获取会话列表及消息数量"""
-        # 查询会话及对应的聊天记录数量
-        from services.chat_history_service import ChatHistory
-        
+
         sessions = db.query(
             ChatSession,
             func.count(ChatHistory.id).label('message_count')

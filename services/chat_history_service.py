@@ -5,7 +5,7 @@ Mystical Oracle Chat History Service - 聊天历史服务
 from typing import List, Optional, Dict, Any
 from datetime import datetime, timedelta, timezone
 from sqlalchemy.orm import Session
-from sqlalchemy import desc, and_
+from sqlalchemy import desc, and_, func
 from models.database import ChatHistory, ChatSession
 from config.logger import server_logger
 
@@ -164,10 +164,10 @@ class ChatHistoryService:
         
         # 情绪分布
         mood_stats = {}
-        mood_results = db.query(ChatHistory.mood, db.func.count(ChatHistory.id)).filter(
+        mood_results = db.query(ChatHistory.mood, func.count(ChatHistory.id)).filter(
             ChatHistory.user_id == user_id
         ).group_by(ChatHistory.mood).all()
-        
+
         for mood, count in mood_results:
             mood_stats[mood] = count
         

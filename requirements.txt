@@ -63,3 +63,11 @@ azure-ai-textanalytics==5.3.0
 # Async support
 anyio==4.9.0
 websockets==15.0.1
+
+#utils
+docx2txt
+pypdf
+unstructured
+networkx
+pandas
+openpyxl

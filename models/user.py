@@ -96,7 +96,7 @@ class UserCreate(BaseModel):
 
 class UserLogin(BaseModel):
     """用户登录模型"""
-    username: constr(min_length=3, max_length=50)
+    username: constr(min_length=2, max_length=50)
     password: constr(min_length=6, max_length=100)
 
 

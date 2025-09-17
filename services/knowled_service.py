@@ -17,6 +17,7 @@ class KnowledgeService:
 
     BASE_UPLOAD_DIR = "./uploads"  # 所有用户上传文件根目录
     BASE_QDRANT_DIR = "./qdrant"   # 所有用户向量数据库根目录
+    COLLECTION_NAME = "knowledge_base" # 知识库 collection 名
 
     @staticmethod
     def get_user_collection_name(user_id: int) -> str:
@@ -81,17 +82,15 @@ class KnowledgeService:
         qdrant_config = config.get_qdrant_config()# todo 要删除
         embedding_config = config.get_embedding_config()
 
-        user_qdrant_path = os.path.join(KnowledgeService.BASE_QDRANT_DIR, f"user_{user_id}")
-        collection_name = KnowledgeService.get_user_collection_name(user_id)
-
         Qdrant.from_documents(
             documents,
             OllamaEmbeddings(**embedding_config),
-            path=user_qdrant_path,
-            collection_name=collection_name,
+            path=KnowledgeService.BASE_QDRANT_DIR,
+            collection_name=KnowledgeService.COLLECTION_NAME,
+            payload={"user_id": user_id}
         )
-        server_logger.info(f"数据已成功添加到用户 {user_id} 的知识库 (collection: {collection_name})")
-        return {"response": f"数据已成功添加到用户 {user_id} 的知识库 (collection: {collection_name})"}
+        server_logger.info(f"数据已成功添加到用户 {user_id} 的知识库 (collection:knowledge_base)")
+        return {"response": f"数据已成功添加到用户 {user_id} 的知识库 (collection:knowledge_base)"}
 
     @staticmethod
     def process_file(file: UploadFile, user_id: int):

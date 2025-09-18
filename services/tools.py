@@ -15,6 +15,7 @@ from langchain_qdrant import QdrantVectorStore
 from qdrant_client import QdrantClient
 
 from models.user import User
+from services.knowled_service import KnowledgeService
 from utils.helpers import delete_think
 from config.settings import config
 from config.logger import tools_logger
@@ -34,43 +35,51 @@ def search(query: str) -> str:
         return "搜索服务暂时不可用，请稍后再试。"
 
 
+# @tool
+# def get_info_from_local_db(query: str) -> str:
+#     """
+#     只有回答与2025年运势相关的问题的时候，会使用这个工具
+#     只有回答与生肖运势相关的问题的时候，会使用这个工具
+#     只有回答与星座(比如水瓶座,等等其他星座)相关的问题的时候，会使用这个工具
+#     """
+#     try:
+#         # 获取 Qdrant 配置
+#         qdrant_config = config.get_qdrant_config()
+#         embedding_config = config.get_embedding_config()
+#
+#         # 连接本地 Qdrant 数据库
+#         qdrant_client = QdrantClient(path=qdrant_config["path"])
+#         vectorstore = QdrantVectorStore(
+#             client=qdrant_client,
+#             collection_name=qdrant_config["collection_name"],
+#             embedding=OllamaEmbeddings(**embedding_config)
+#         )
+#
+#         # 检索相关文档
+#         retriever = vectorstore.as_retriever(search_type="mmr")
+#         docs = retriever.get_relevant_documents(query)
+#
+#         # 格式化文档为字符串
+#         if docs:
+#             formatted_docs = "\n\n".join([
+#                 f"来源: {doc.metadata.get('source', '未知')}\n内容: {doc.page_content}"
+#                 for doc in docs
+#             ])
+#             return formatted_docs
+#         else:
+#             return "未找到相关信息"
+#
+#     except Exception as e:
+#         tools_logger.error(f"本地知识库查询出错: {e}")
+#         return "知识库暂时不可用，请稍后再试。"
+
+
 @tool
 def get_info_from_local_db(query: str) -> str:
     """
-    只有回答与2025年运势相关的问题的时候，会使用这个工具
-    只有回答与生肖运势相关的问题的时候，会使用这个工具
-    只有回答与星座(比如水瓶座,等等其他星座)相关的问题的时候，会使用这个工具
+    只有回答公司相关问题，会使用这个工具
     """
-    try:
-        # 获取 Qdrant 配置
-        qdrant_config = config.get_qdrant_config()
-        embedding_config = config.get_embedding_config()
-        
-        # 连接本地 Qdrant 数据库
-        qdrant_client = QdrantClient(path=qdrant_config["path"])
-        vectorstore = QdrantVectorStore(
-            client=qdrant_client,
-            collection_name=qdrant_config["collection_name"],
-            embedding=OllamaEmbeddings(**embedding_config)
-        )
-        
-        # 检索相关文档
-        retriever = vectorstore.as_retriever(search_type="mmr")
-        docs = retriever.get_relevant_documents(query)
-        
-        # 格式化文档为字符串
-        if docs:
-            formatted_docs = "\n\n".join([
-                f"来源: {doc.metadata.get('source', '未知')}\n内容: {doc.page_content}"
-                for doc in docs
-            ])
-            return formatted_docs
-        else:
-            return "未找到相关信息"
-            
-    except Exception as e:
-        tools_logger.error(f"本地知识库查询出错: {e}")
-        return "知识库暂时不可用，请稍后再试。"
+    return KnowledgeService.search_user_knowledge(query,1)
 
 
 @tool

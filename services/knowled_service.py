@@ -6,6 +6,7 @@ from langchain_community.document_loaders import WebBaseLoader, PyPDFLoader, Doc
 from langchain_ollama import OllamaEmbeddings
 from langchain_qdrant import Qdrant
 from langchain_text_splitters import RecursiveCharacterTextSplitter
+from qdrant_client.models import Filter, FieldCondition, MatchValue
 
 from config.settings import config
 from config.logger import server_logger
@@ -17,12 +18,7 @@ class KnowledgeService:
 
     BASE_UPLOAD_DIR = "./uploads"  # 所有用户上传文件根目录
     BASE_QDRANT_DIR = "./qdrant"   # 所有用户向量数据库根目录
-    COLLECTION_NAME = "knowledge_base" # 知识库 collection 名
-
-    @staticmethod
-    def get_user_collection_name(user_id: int) -> str:
-        """返回用户唯一 collection 名"""
-        return f"knowledge_user_{user_id}"
+    COLLECTION_NAME = "knowledge_base"  # 统一的知识库 collection 名
 
     @staticmethod
     def save_upload_file(file: UploadFile, user_id: int) -> str:
@@ -78,19 +74,21 @@ class KnowledgeService:
 
     @staticmethod
     def add_to_qdrant(documents, user_id: int):
-        """写入用户专属 Collection"""
-        qdrant_config = config.get_qdrant_config()# todo 要删除
+        """写入统一 Collection，按 user_id 区分"""
         embedding_config = config.get_embedding_config()
+
+        # 为每个文档添加 user_id 元数据
+        for doc in documents:
+            doc.metadata["user_id"] = user_id
 
         Qdrant.from_documents(
             documents,
             OllamaEmbeddings(**embedding_config),
             path=KnowledgeService.BASE_QDRANT_DIR,
-            collection_name=KnowledgeService.COLLECTION_NAME,
-            payload={"user_id": user_id}
+            collection_name=KnowledgeService.COLLECTION_NAME
         )
-        server_logger.info(f"数据已成功添加到用户 {user_id} 的知识库 (collection:knowledge_base)")
-        return {"response": f"数据已成功添加到用户 {user_id} 的知识库 (collection:knowledge_base)"}
+        server_logger.info(f"数据已成功添加到用户 {user_id} 的知识库 (collection:{KnowledgeService.COLLECTION_NAME})")
+        return {"response": f"数据已成功添加到用户 {user_id} 的知识库 (collection:{KnowledgeService.COLLECTION_NAME})"}
 
     @staticmethod
     def process_file(file: UploadFile, user_id: int):
@@ -105,3 +103,53 @@ class KnowledgeService:
         docs, _ = KnowledgeService.load_from_url(url)
         documents = KnowledgeService.split_documents(docs)
         return KnowledgeService.add_to_qdrant(documents, user_id)
+
+    @staticmethod
+    def search_user_knowledge(query: str, user_id: int, k: int = 1) -> str:
+        """在用户专属向量数据库中检索相关内容"""
+        try:
+            embedding_config = config.get_embedding_config()
+            embeddings = OllamaEmbeddings(**embedding_config)
+
+            # 创建 Qdrant 实例 (使用正确的初始化方式)
+            qdrant = Qdrant.from_existing_collection(
+                embedding=embeddings,
+                path=KnowledgeService.BASE_QDRANT_DIR,
+                collection_name=KnowledgeService.COLLECTION_NAME
+            )
+
+            # 使用过滤器只检索该用户的数据
+            filter_condition = Filter(
+                must=[
+                    FieldCondition(
+                        key="metadata.user_id",
+                        match=MatchValue(value=user_id)
+                    )
+                ]
+            )
+
+            # 执行相似性搜索
+            retriever = qdrant.as_retriever(
+                search_type="similarity_score_threshold",  # 使用基于阈值的相似度搜索
+                search_kwargs={
+                    "score_threshold": .5,  # 相似度阈值设为0.5
+                    "k": k  # 最多返回k个结果
+                },
+                filter=filter_condition  # 还要满足用户ID过滤条件
+            )
+            docs = retriever.invoke(query)
+
+            # 格式化返回结果
+            if docs:
+                formatted_docs = "\n\n".join([
+                    f"来源: {doc.metadata.get('source', '未知')}\n内容: {doc.page_content}"
+                    for doc in docs
+                ])
+                return formatted_docs
+            else:
+                return "未找到相关信息"
+
+        except Exception as e:
+            error_msg = format_error_message(e, f"检索用户 {user_id} 的知识库")
+            server_logger.error(error_msg)
+            raise HTTPException(status_code=500, detail="知识库检索失败")

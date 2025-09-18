@@ -4,7 +4,7 @@ Mystical Oracle User Model - 用户数据模型
 """
 from datetime import datetime
 from typing import Optional
-from pydantic import BaseModel, EmailStr, field_validator, constr
+from pydantic import BaseModel, EmailStr, field_validator, constr, Field
 from config.settings import config
 
 
@@ -178,3 +178,8 @@ class ChatRequest(BaseModel):
     """聊天请求模型"""
     query: str
     enable_tts: bool = True
+
+
+class KnowledgeInput(BaseModel):
+    query: str = Field(..., description="要查询的内容")
+    session_id: str = Field(..., description="用户的唯一标识")

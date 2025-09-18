@@ -21,9 +21,9 @@ class KnowledgeService:
     COLLECTION_NAME = "knowledge_base"  # 统一的知识库 collection 名
 
     @staticmethod
-    def save_upload_file(file: UploadFile, user_id: int) -> str:
+    def save_upload_file(file: UploadFile, session_id: str) -> str:
         """保存上传文件到用户目录"""
-        user_dir = os.path.join(KnowledgeService.BASE_UPLOAD_DIR, f"user_{user_id}")
+        user_dir = os.path.join(KnowledgeService.BASE_UPLOAD_DIR, f"{session_id}")
         os.makedirs(user_dir, exist_ok=True)
         file_path = os.path.join(user_dir, file.filename)
 
@@ -33,9 +33,9 @@ class KnowledgeService:
         return file_path
 
     @staticmethod
-    def load_from_file(file: UploadFile, user_id: int):
+    def load_from_file(file: UploadFile, session_id: str):
         """加载文件内容"""
-        file_path = KnowledgeService.save_upload_file(file, user_id)
+        file_path = KnowledgeService.save_upload_file(file, session_id)
         ext = file.filename.split(".")[-1].lower()
         try:
             if ext == "pdf":
@@ -73,13 +73,13 @@ class KnowledgeService:
         return splitter.split_documents(docs)
 
     @staticmethod
-    def add_to_qdrant(documents, user_id: int):
-        """写入统一 Collection，按 user_id 区分"""
+    def add_to_qdrant(documents, session_id: str):
+        """写入统一 Collection，按 session_id 区分"""
         embedding_config = config.get_embedding_config()
 
-        # 为每个文档添加 user_id 元数据
+        # 为每个文档添加 session_id 元数据
         for doc in documents:
-            doc.metadata["user_id"] = user_id
+            doc.metadata["session_id"] = session_id
 
         Qdrant.from_documents(
             documents,
@@ -87,25 +87,25 @@ class KnowledgeService:
             path=KnowledgeService.BASE_QDRANT_DIR,
             collection_name=KnowledgeService.COLLECTION_NAME
         )
-        server_logger.info(f"数据已成功添加到用户 {user_id} 的知识库 (collection:{KnowledgeService.COLLECTION_NAME})")
-        return {"response": f"数据已成功添加到用户 {user_id} 的知识库 (collection:{KnowledgeService.COLLECTION_NAME})"}
+        server_logger.info(f"数据已成功添加到对话框 {session_id} 的知识库 (collection:{KnowledgeService.COLLECTION_NAME})")
+        return {"response": f"数据已成功添加到对话框 {session_id} 的知识库 (collection:{KnowledgeService.COLLECTION_NAME})"}
 
     @staticmethod
-    def process_file(file: UploadFile, user_id: int):
+    def process_file(file: UploadFile, session_id: str):
         """处理上传文件"""
-        docs, _ = KnowledgeService.load_from_file(file, user_id)
+        docs, _ = KnowledgeService.load_from_file(file, session_id)
         documents = KnowledgeService.split_documents(docs)
-        return KnowledgeService.add_to_qdrant(documents, user_id)
+        return KnowledgeService.add_to_qdrant(documents, session_id)
 
     @staticmethod
-    def process_url(url: str, user_id: int):
+    def process_url(url: str, session_id: str):
         """处理 URL"""
         docs, _ = KnowledgeService.load_from_url(url)
         documents = KnowledgeService.split_documents(docs)
-        return KnowledgeService.add_to_qdrant(documents, user_id)
+        return KnowledgeService.add_to_qdrant(documents, session_id)
 
     @staticmethod
-    def search_user_knowledge(query: str, user_id: int, k: int = 1) -> str:
+    def search_user_knowledge(query: str, session_id: str, k: int = 1) -> str:
         """在用户专属向量数据库中检索相关内容"""
         try:
             embedding_config = config.get_embedding_config()
@@ -122,8 +122,8 @@ class KnowledgeService:
             filter_condition = Filter(
                 must=[
                     FieldCondition(
-                        key="metadata.user_id",
-                        match=MatchValue(value=user_id)
+                        key="metadata.session_id",
+                        match=MatchValue(value=session_id)
                     )
                 ]
             )
@@ -150,6 +150,6 @@ class KnowledgeService:
                 return "未找到相关信息"
 
         except Exception as e:
-            error_msg = format_error_message(e, f"检索用户 {user_id} 的知识库")
+            error_msg = format_error_message(e, f"检索用户当前对话框 {session_id} 的知识库")
             server_logger.error(error_msg)
             raise HTTPException(status_code=500, detail="知识库检索失败")

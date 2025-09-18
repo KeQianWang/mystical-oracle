@@ -2,7 +2,6 @@
 Mystical Oracle Agent - 神秘预言师核心模块
 将配置、提示词模板分离，提高代码可维护性，并集成语音合成功能
 """
-import os
 from typing import Optional, Dict, Any
 
 from langchain.agents import AgentExecutor, create_openai_tools_agent
@@ -14,7 +13,7 @@ from langchain_core.runnables import RunnableLambda, RunnableWithMessageHistory,
 from langchain_core.messages import SystemMessage
 from langchain_ollama import ChatOllama
 
-from services.tools import bazi_cesuan, get_info_from_local_db, search, yaoyigua, jiemeng
+from services.tools import bazi_cesuan, search, yaoyigua, jiemeng, get_info_from_knowledge
 from utils.helpers import delete_think
 from config.settings import config
 from prompts.system_prompts import SystemPrompts
@@ -37,7 +36,6 @@ class Master:
         self.chat_model = self._init_chat_model()
         
         # 缓存 Agent 组件，避免重复初始化
-        self._agent_prompt_template = None
         self._agent_executor = None
         
         # 初始化 Agent 执行器
@@ -66,7 +64,7 @@ class Master:
         ])
         
         # 工具列表
-        tools = [search, get_info_from_local_db, bazi_cesuan, yaoyigua, jiemeng]
+        tools = [search, get_info_from_knowledge, bazi_cesuan, yaoyigua, jiemeng]
         
         # 创建 Agent
         agent = create_openai_tools_agent(self.chat_model, tools, prompt)

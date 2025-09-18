@@ -15,7 +15,7 @@ from langchain_core.runnables import RunnableLambda
 from langchain_openai import OpenAI, ChatOpenAI
 
 from models.user import User
-from services.knowled_service import KnowledgeService
+from services.knowledge_service import KnowledgeService
 from utils.helpers import delete_think
 from config.settings import config
 from config.logger import tools_logger

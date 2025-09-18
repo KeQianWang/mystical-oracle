@@ -70,8 +70,6 @@ class ChatSession(Base):
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False, comment="用户ID")
     session_id = Column(String(100), unique=True, nullable=False, comment="会话ID")
     title = Column(String(255), nullable=True, comment="会话标题")
-    mood = Column(String(20), default="default", comment="会话情绪")
-    is_active = Column(Boolean, default=True, comment="是否活跃")
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), comment="创建时间")
     updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc), comment="更新时间")
     

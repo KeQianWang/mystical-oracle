@@ -10,6 +10,8 @@ from sqlalchemy import and_, desc, func
 from models.database import ChatSession, ChatHistory
 from models.user import ChatSessionCreate, ChatSessionUpdate
 from config.logger import server_logger
+from services.knowledge_service import KnowledgeService
+from services.redis_service import RedisService
 
 
 class SessionService:
@@ -41,8 +43,7 @@ class SessionService:
         """获取用户的所有会话"""
         sessions = db.query(ChatSession).filter(
             and_(
-                ChatSession.user_id == user_id,
-                ChatSession.is_active == True
+                ChatSession.user_id == user_id
             )
         ).order_by(desc(ChatSession.updated_at)).offset(skip).limit(limit).all()
         
@@ -55,7 +56,6 @@ class SessionService:
             and_(
                 ChatSession.session_id == session_id,
                 ChatSession.user_id == user_id,
-                ChatSession.is_active == True
             )
         ).first()
     
@@ -69,32 +69,36 @@ class SessionService:
         # 更新字段
         if update_data.title is not None:
             session.title = update_data.title
-        if update_data.is_active is not None:
-            session.is_active = update_data.is_active
         
-        session.updated_at = datetime.utcnow()
+        session.updated_at = datetime.now(timezone.utc)
         
         db.commit()
         db.refresh(session)
         
         server_logger.info(f"更新会话: session_id={session_id}, user_id={user_id}")
         return session
-    
+
     @staticmethod
     def delete_session(db: Session, session_id: str, user_id: int) -> bool:
-        """删除会话（软删除）"""
+        """删除会话（真实删除）"""
         session = SessionService.get_session_by_id(db, session_id, user_id)
-        if not session:
-            return False
-        
-        session.is_active = False
-        session.updated_at = datetime.now(timezone.utc)
-        
-        db.commit()
-        
+        # if not session:
+        #     return False
+        #
+        # # 真实删除会话记录
+        # db.delete(session)
+        # db.commit()
+
+        # 删除知识库
+        KnowledgeService.delete_user_knowledge(session_id)
+        # 删除上传文件
+        KnowledgeService.delete_upload_files(session_id)
+        #删除记忆
+        RedisService.clear_chat_history(session_id)
+
         server_logger.info(f"删除会话: session_id={session_id}, user_id={user_id}")
         return True
-    
+
     @staticmethod
     def get_session_with_message_count(db: Session, user_id: int, skip: int = 0, limit: int = 50) -> List[dict]:
         """获取会话列表及消息数量"""
@@ -111,7 +115,6 @@ class SessionService:
         ).filter(
             and_(
                 ChatSession.user_id == user_id,
-                ChatSession.is_active == True
             )
         ).group_by(ChatSession.id).order_by(desc(ChatSession.updated_at)).offset(skip).limit(limit).all()
         
@@ -123,7 +126,6 @@ class SessionService:
                 'title': session.title,
                 'created_at': session.created_at,
                 'updated_at': session.updated_at,
-                'is_active': session.is_active,
                 'message_count': message_count or 0
             })
         

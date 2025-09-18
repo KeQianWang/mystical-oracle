@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 
 from database.connection import get_db
 from models.user import UserResponse
-from services.knowled_service import KnowledgeService
+from services.knowledge_service import KnowledgeService
 from services.session_service import SessionService
 from utils.helpers import format_error_message
 from config.logger import server_logger

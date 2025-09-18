@@ -31,7 +31,7 @@ engine = create_engine(
 # 创建会话工厂
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
-
+# 常用于 FastAPI 的依赖注入（Depends(get_db)）
 def get_db() -> Generator[Session, None, None]:
     """获取数据库会话"""
     db = SessionLocal()
@@ -44,7 +44,7 @@ def get_db() -> Generator[Session, None, None]:
     finally:
         db.close()
 
-
+# 使用 @contextmanager 装饰器，可以通过 with 语句来用
 @contextmanager
 def get_db_context():
     """获取数据库会话上下文管理器"""

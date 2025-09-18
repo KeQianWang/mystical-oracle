@@ -16,14 +16,7 @@ class ChatHistoryService:
     @staticmethod
     def create_chat_session(db: Session, user_id: int, session_id: str, title: str = None) -> type[ChatSession] | ChatSession:
         """创建聊天会话"""
-        # 检查会话是否已存在
-        existing_session = db.query(ChatSession).filter(
-            and_(ChatSession.user_id == user_id, ChatSession.session_id == session_id)
-        ).first()
-        
-        if existing_session:
-            return existing_session
-        
+
         # 创建新会话
         chat_session = ChatSession(
             user_id=user_id,
@@ -199,8 +192,6 @@ class ChatHistoryService:
             "id": session.id,
             "session_id": session.session_id,
             "title": session.title,
-            "mood": session.mood,
-            "is_active": session.is_active,
             "created_at": session.created_at.isoformat(),
             "updated_at": session.updated_at.isoformat()
         }

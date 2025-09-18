@@ -13,6 +13,7 @@ from langchain_core.runnables import RunnableLambda, RunnableWithMessageHistory,
 from langchain_core.messages import SystemMessage
 from langchain_ollama import ChatOllama
 
+from services.redis_service import RedisService
 from services.tools import bazi_cesuan, search, yaoyigua, jiemeng, get_info_from_knowledge
 from utils.helpers import delete_think
 from config.settings import config
@@ -174,34 +175,24 @@ class Master:
         """检查是否需要更新提示词"""
         # 这里可以添加更精细的逻辑来判断是否需要更新
         return True  # 目前简化为总是更新
-    
+
     def _get_memory(self) -> RedisChatMessageHistory:
         """获取和管理聊天记录"""
         try:
-            redis_config = config.get_redis_config()
-            chat_message_history = RedisChatMessageHistory(
-                session_id=self.session_id,
-                **redis_config
-            )
-            
-            agent_logger.debug(f"聊天记录: {chat_message_history.messages}")
-            stored_messages = chat_message_history.messages
-            
+            stored_messages = RedisService.get_chat_messages(self.session_id)
+
             # 如果历史消息过多，进行摘要
             if len(stored_messages) > config.MAX_HISTORY_MESSAGES:
-                self._summarize_history(chat_message_history, stored_messages)
-            
-            return chat_message_history
-            
+                self._summarize_history(stored_messages)
+
+            return RedisService.get_chat_history(self.session_id)
+
         except Exception as e:
             agent_logger.error(f"获取聊天记录失败: {e}")
             # 返回一个默认的历史记录
-            return RedisChatMessageHistory(
-                session_id=self.session_id,
-                url=config.REDIS_URL
-            )
-    
-    def _summarize_history(self, chat_history: RedisChatMessageHistory, messages: list) -> None:
+            return RedisService.get_chat_history(self.session_id)
+
+    def _summarize_history(self, messages: list) -> None:
         """摘要历史对话"""
         try:
             summary_prompt = ChatPromptTemplate.from_messages([
@@ -225,9 +216,9 @@ class Master:
             agent_logger.info(f'历史对话大于{config.MAX_HISTORY_MESSAGES}条，总结历史对话: {summary}')
             
             # 清空历史记录并添加摘要
-            chat_history.clear()
+            RedisService.clear_chat_history(self.session_id)
             if summary:
-                chat_history.add_message(SystemMessage(content=str(summary)))
+                RedisService.add_message(self.session_id,SystemMessage(content=str(summary)))
                 
         except Exception as e:
             agent_logger.error(f"摘要历史对话失败: {e}")

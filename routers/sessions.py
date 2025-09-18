@@ -35,7 +35,6 @@ def create_session(
             title=session.title,
             created_at=session.created_at,
             updated_at=session.updated_at,
-            is_active=session.is_active,
             message_count=0
         )
     except Exception as e:
@@ -61,7 +60,6 @@ def get_user_sessions(
                 title=data['title'],
                 created_at=data['created_at'],
                 updated_at=data['updated_at'],
-                is_active=data['is_active'],
                 message_count=data['message_count']
             ) for data in sessions_data
         ]
@@ -95,7 +93,6 @@ def update_session(
             title=session.title,
             created_at=session.created_at,
             updated_at=session.updated_at,
-            is_active=session.is_active,
             message_count=message_count
         )
     except HTTPException:

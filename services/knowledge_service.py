@@ -153,3 +153,93 @@ class KnowledgeService:
             error_msg = format_error_message(e, f"检索用户当前对话框 {session_id} 的知识库")
             server_logger.error(error_msg)
             raise HTTPException(status_code=500, detail="知识库检索失败")
+
+
+    @staticmethod
+    def delete_user_knowledge(session_id: str) -> dict:
+        """删除用户专属向量数据库中的内容"""
+        try:
+            embedding_config = config.get_embedding_config()
+            embeddings = OllamaEmbeddings(**embedding_config)
+
+            # 创建 Qdrant 实例
+            qdrant = Qdrant.from_existing_collection(
+                embedding=embeddings,
+                path=KnowledgeService.BASE_QDRANT_DIR,
+                collection_name=KnowledgeService.COLLECTION_NAME
+            )
+
+            # 构建过滤条件，匹配指定 session_id 的数据
+            filter_condition = Filter(
+                must=[
+                    FieldCondition(
+                        key="metadata.session_id",
+                        match=MatchValue(value=session_id)
+                    )
+                ]
+            )
+
+            # 获取要删除的点ID
+            # 注意：Qdrant 删除操作需要点ID，所以我们需要先查询再删除
+            search_result = qdrant.client.scroll(
+                collection_name=KnowledgeService.COLLECTION_NAME,
+                scroll_filter=filter_condition,
+                limit=10000,  # 设置一个较大的限制以获取所有匹配项
+                with_payload=True,
+                with_vectors=False
+            )
+
+            # 提取点ID
+            point_ids = [point.id for point in search_result[0]]
+
+            if point_ids:
+                # 执行删除操作
+                qdrant.client.delete(
+                    collection_name=KnowledgeService.COLLECTION_NAME,
+                    points_selector=point_ids
+                )
+
+                server_logger.info(f"已删除 session_id={session_id} 的 {len(point_ids)} 条向量数据")
+                return {
+                    "response": f"已成功删除对话框 {session_id} 的 {len(point_ids)} 条知识库数据",
+                    "deleted_count": len(point_ids)
+                }
+            else:
+                server_logger.info(f"未找到 session_id={session_id} 的向量数据")
+                return {
+                    "response": f"未找到对话框 {session_id} 的知识库数据",
+                    "deleted_count": 0
+                }
+
+        except Exception as e:
+            error_msg = format_error_message(e, f"删除用户当前对话框 {session_id} 的知识库")
+            server_logger.error(error_msg)
+            raise HTTPException(status_code=500, detail="知识库删除失败")
+
+    @staticmethod
+    def delete_upload_files(session_id: str) -> dict:
+        """删除指定 session_id 的上传文件"""
+        try:
+            # 构建用户目录路径
+            user_dir = os.path.join(KnowledgeService.BASE_UPLOAD_DIR, f"{session_id}")
+
+            # 检查目录是否存在
+            if os.path.exists(user_dir) and os.path.isdir(user_dir):
+                # 删除整个用户目录及其内容
+                shutil.rmtree(user_dir)
+                server_logger.info(f"已删除 session_id={session_id} 的上传文件目录: {user_dir}")
+                return {
+                    "response": f"已成功删除对话框 {session_id} 的上传文件",
+                    "deleted": True
+                }
+            else:
+                server_logger.info(f"未找到 session_id={session_id} 的上传文件目录: {user_dir}")
+                return {
+                    "response": f"未找到对话框 {session_id} 的上传文件",
+                    "deleted": False
+                }
+
+        except Exception as e:
+            error_msg = format_error_message(e, f"删除用户当前对话框 {session_id} 的上传文件")
+            server_logger.error(error_msg)
+            raise HTTPException(status_code=500, detail="文件删除失败")

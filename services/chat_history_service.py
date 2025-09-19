@@ -14,24 +14,6 @@ class ChatHistoryService:
     """聊天历史服务类"""
     
     @staticmethod
-    def create_chat_session(db: Session, user_id: int, session_id: str, title: str = None) -> type[ChatSession] | ChatSession:
-        """创建聊天会话"""
-
-        # 创建新会话
-        chat_session = ChatSession(
-            user_id=user_id,
-            session_id=session_id,
-            title=title or f"会话 {datetime.now().strftime('%Y-%m-%d %H:%M')}"
-        )
-        
-        db.add(chat_session)
-        db.commit()
-        db.refresh(chat_session)
-        
-        server_logger.info(f"创建聊天会话成功: user_id={user_id}, session_id={session_id}")
-        return chat_session
-    
-    @staticmethod
     def add_chat_history(
         db: Session,
         user_id: int,
@@ -43,9 +25,6 @@ class ChatHistoryService:
         metadata: Dict[str, Any] = None
     ) -> ChatHistory:
         """添加聊天历史记录"""
-
-        # 确保会话存在
-        ChatHistoryService.create_chat_session(db, user_id, session_id)
 
         # 创建聊天历史记录
         chat_history = ChatHistory(
@@ -73,65 +52,13 @@ class ChatHistoryService:
         skip: int = 0,
         limit: int = 50
     ) -> list[type[ChatHistory]]:
-        """获取聊天历史记录"""
+        """获取特定会话的聊天历史"""
         query = db.query(ChatHistory).filter(ChatHistory.user_id == user_id)
         
         if session_id:
             query = query.filter(ChatHistory.session_id == session_id)
         
         return query.order_by(desc(ChatHistory.created_at)).offset(skip).limit(limit).all()
-    
-    @staticmethod
-    def get_chat_sessions(db: Session, user_id: int) -> list[type[ChatSession]]:
-        """获取用户的所有聊天会话"""
-        return db.query(ChatSession).filter(
-            ChatSession.user_id == user_id
-        ).order_by(desc(ChatSession.updated_at)).all()
-    
-    @staticmethod
-    def get_session_history(db: Session, user_id: int, session_id: str) -> list[type[ChatHistory]]:
-        """获取特定会话的聊天历史"""
-        return db.query(ChatHistory).filter(
-            and_(ChatHistory.user_id == user_id, ChatHistory.session_id == session_id)
-        ).order_by(ChatHistory.created_at).all()
-    
-    @staticmethod
-    def update_session_title(db: Session, user_id: int, session_id: str, title: str) -> Optional[ChatSession]:
-        """更新会话标题"""
-        session = db.query(ChatSession).filter(
-            and_(ChatSession.user_id == user_id, ChatSession.session_id == session_id)
-        ).first()
-        
-        if not session:
-            return None
-        
-        session.title = title
-        session.updated_at = datetime.now(timezone.utc)
-        db.commit()
-        db.refresh(session)
-        
-        server_logger.info(f"更新会话标题成功: user_id={user_id}, session_id={session_id}, title={title}")
-        return session
-    
-    @staticmethod
-    def delete_session(db: Session, user_id: int, session_id: str) -> bool:
-        """删除会话及其历史记录"""
-        # 删除聊天历史
-        db.query(ChatHistory).filter(
-            and_(ChatHistory.user_id == user_id, ChatHistory.session_id == session_id)
-        ).delete()
-        
-        # 删除会话
-        result = db.query(ChatSession).filter(
-            and_(ChatSession.user_id == user_id, ChatSession.session_id == session_id)
-        ).delete()
-        
-        db.commit()
-        
-        if result > 0:
-            server_logger.info(f"删除会话成功: user_id={user_id}, session_id={session_id}")
-            return True
-        return False
     
     @staticmethod
     def get_recent_chats(db: Session, user_id: int, days: int = 7) -> list[type[ChatHistory]]:
@@ -185,13 +112,3 @@ class ChatHistoryService:
             "created_at": chat_history.created_at.isoformat()
         }
     
-    @staticmethod
-    def session_to_dict(session: ChatSession) -> Dict[str, Any]:
-        """将会话记录转换为字典"""
-        return {
-            "id": session.id,
-            "session_id": session.session_id,
-            "title": session.title,
-            "created_at": session.created_at.isoformat(),
-            "updated_at": session.updated_at.isoformat()
-        }

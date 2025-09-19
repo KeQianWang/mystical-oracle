@@ -70,12 +70,17 @@ class SessionService:
     @staticmethod
     def delete_session(db: Session, session_id: str, user_id: int) -> bool:
         """删除会话（真实删除）"""
-        session = SessionService.get_session_by_id(db, session_id, user_id)
-        if not session:
-            return False
 
-        # 真实删除会话记录
-        db.delete(session)
+        # 删除聊天历史
+        db.query(ChatHistory).filter(
+            and_(ChatHistory.user_id == user_id, ChatHistory.session_id == session_id)
+        ).delete()
+
+        # 删除会话
+        db.query(ChatSession).filter(
+            and_(ChatSession.user_id == user_id, ChatSession.session_id == session_id)
+        ).delete()
+
         db.commit()
 
         # 删除知识库

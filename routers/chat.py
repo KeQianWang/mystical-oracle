@@ -36,17 +36,17 @@ def chat(
             chat_request.session_id = session.session_id
 
         session_id = chat_request.session_id
-        
+
         # 更新会话活跃时间
         SessionService.update_session_activity(db, session_id, current_user.id)
-        
+
         # 创建算命师实例并处理对话
         master = Master(session_id=session_id,user_id=current_user.id)
         result = master.run(chat_request.query)
-        
+
         # 生成唯一 ID 用于音频文件
         unique_id = str(uuid.uuid4())
-        
+
         # 后台任务：语音合成
         if result.get("output") and chat_request.enable_tts:
             background_tasks.add_task(
@@ -54,7 +54,7 @@ def chat(
                 result["output"],
                 unique_id
             )
-        
+
         return {
             "msg": result.get("output", "无法获取回复"),
             "id": unique_id,
@@ -62,7 +62,7 @@ def chat(
             "mood": master.get_current_mood(),
             "voice_style": master.get_voice_style()
         }
-        
+
     except Exception as e:
         error_msg = format_error_message(e, "对话处理")
         server_logger.error(error_msg)

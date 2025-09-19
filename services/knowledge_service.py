@@ -17,9 +17,9 @@ class KnowledgeService:
     """知识库写入服务"""
     def __init__(self):
         self.qdrant_config = config.get_qdrant_config()
-        self.BASE_UPLOAD_DIR = self.qdrant_config.base_upload_dir
-        self.BASE_QDRANT_DIR = self.qdrant_config.path
-        self.COLLECTION_NAME = self.qdrant_config.collection_name
+        self.BASE_UPLOAD_DIR = self.qdrant_config["base_upload_dir"]
+        self.BASE_QDRANT_DIR = self.qdrant_config["path"]
+        self.COLLECTION_NAME = self.qdrant_config["collection_name"]
 
     def save_upload_file(self, file: UploadFile, session_id: str) -> str:
         """保存上传文件到用户目录"""
@@ -128,9 +128,9 @@ class KnowledgeService:
                 search_type="similarity_score_threshold",  # 使用基于阈值的相似度搜索
                 search_kwargs={
                     "score_threshold": .5,  # 相似度阈值设为0.5
-                    "k": k  # 最多返回k个结果
+                    "k": k,  # 最多返回k个结果
+                    "filter": filter_condition  # 还要满足用户ID过滤条件
                 },
-                filter=filter_condition  # 还要满足用户ID过滤条件
             )
             docs = retriever.invoke(query)
 

@@ -235,10 +235,10 @@ class Master:
         """获取当前情绪描述"""
         return MoodPrompts.get_mood_description(self.current_mood)
     
-    def synthesize_speech_background(self, text: str, uid: str) -> None:
-        """后台语音合成任务"""
+    async def synthesize_speech_background(self, text: str, uid: str) -> None:
+        """统一的语音合成后台任务，支持同步和异步调用"""
         if tts_service.is_available():
-            tts_service.synthesize_speech_background(text, uid, self.current_mood)
+            await tts_service.synthesize_speech(text, uid, self.current_mood)
         else:
             agent_logger.warning("TTS 服务不可用，跳过语音合成")
     

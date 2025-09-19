@@ -3,7 +3,7 @@ Mystical Oracle Authentication - 认证服务
 提供JWT认证和密码哈希功能
 """
 from datetime import datetime, timedelta, timezone
-from typing import Optional
+from typing import Optional, Any, Coroutine
 from jose import JWTError, jwt
 from passlib.context import CryptContext
 from sqlalchemy.orm import Session
@@ -136,3 +136,27 @@ def update_last_login(db: Session, user: User) -> None:
     user.last_login_at = datetime.now(timezone.utc)
     db.commit()
     server_logger.info(f"用户 {user.username} 最后登录时间已更新")
+
+
+async def get_current_active_user_websocket(token: str, db: Session) -> User:
+    """WebSocket专用的用户认证函数"""
+    credentials_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="无效的认证凭据",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+
+    try:
+        token_data = verify_token(token, credentials_exception)
+        user = db.query(User).filter(User.id == token_data.user_id).first()
+        if user is None:
+            raise credentials_exception
+        if not user.is_active:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="用户已被禁用"
+            )
+        return user
+    except Exception as e:
+        server_logger.error(f"WebSocket认证失败: {e}")
+        raise credentials_exception

@@ -25,15 +25,8 @@ class TTSService:
         # 确保音频目录存在
         self.audio_dir = Path(config.AUDIO_OUTPUT_DIR)
         self.audio_dir.mkdir(parents=True, exist_ok=True)
-    
-    def synthesize_speech_background(self, text: str, uid: str, mood: str = "default") -> None:
-        """后台语音合成任务"""
-        try:
-            asyncio.run(self._synthesize_speech(text, uid, mood))
-        except Exception as e:
-            tts_logger.error(f"语音合成失败: {e}")
-    
-    async def _synthesize_speech(self, text: str, uid: str, mood: str = "default") -> Optional[str]:
+
+    async def synthesize_speech(self, text: str, uid: str, mood: str = "default") -> Optional[str]:
         """异步语音合成"""
         try:
             tts_logger.info(f"开始语音合成: {text[:50]}...")

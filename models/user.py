@@ -89,7 +89,7 @@ class User(BaseModel):
 class UserCreate(BaseModel):
     """用户注册模型"""
     username: constr(min_length=2, max_length=50)
-    email: EmailStr
+    email: str
     password: constr(min_length=6, max_length=100)
     nickname: Optional[constr(max_length=50)] = None
 

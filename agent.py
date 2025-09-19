@@ -11,10 +11,9 @@ from langchain_core.output_parsers import StrOutputParser
 from langchain_core.prompts import MessagesPlaceholder, ChatPromptTemplate
 from langchain_core.runnables import RunnableLambda, RunnableWithMessageHistory, RunnableConfig
 from langchain_core.messages import SystemMessage
-from langchain_ollama import ChatOllama
 
 from services.redis_service import RedisService
-from services.tools import bazi_cesuan, search, yaoyigua, jiemeng, get_info_from_knowledge
+from tools.tools import bazi_cesuan, search, yaoyigua, jiemeng, get_info_from_knowledge
 from utils.helpers import delete_think
 from config.settings import config
 from prompts.system_prompts import SystemPrompts

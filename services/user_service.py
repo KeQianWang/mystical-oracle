@@ -2,7 +2,7 @@
 Mystical Oracle User Service - 用户服务
 提供用户相关的业务逻辑
 """
-from typing import Optional, List
+from typing import Optional
 from datetime import datetime, timezone
 from sqlalchemy.orm import Session
 from fastapi import HTTPException, status
@@ -73,7 +73,7 @@ class UserService:
             return None
         
         # 更新用户信息
-        update_data = user_data.dict(exclude_unset=True)
+        update_data = user_data.model_dump(exclude_unset=True)
         for field, value in update_data.items():
             setattr(user, field, value)
         
@@ -98,7 +98,7 @@ class UserService:
         return True
     
     @staticmethod
-    def get_all_users(db: Session, skip: int = 0, limit: int = 100) -> List[User]:
+    def get_all_users(db: Session, skip: int = 0, limit: int = 100) -> list[type[User]]:
         """获取所有用户"""
         return db.query(User).offset(skip).limit(limit).all()
     

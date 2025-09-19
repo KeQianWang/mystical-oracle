@@ -13,17 +13,11 @@ class RedisService:
     """Redis 服务类，封装 Redis 相关操作"""
 
     @staticmethod
-    def _get_redis_config():
-        """获取 Redis 配置"""
-        return config.get_redis_config()
-
-    @staticmethod
     def get_chat_history(session_id: str) -> RedisChatMessageHistory:
         """获取聊天记录对象"""
-        redis_config = RedisService._get_redis_config()
         return RedisChatMessageHistory(
             session_id=session_id,
-            **redis_config
+            **config.get_redis_config()
         )
 
     @staticmethod

@@ -20,10 +20,12 @@ class BotConfig:
     MODEL_TEMPERATURE = float(os.getenv("MODEL_TEMPERATURE"))
     
     # 数据库配置
+    REDIS_URL = os.getenv("REDIS_URL")
     QDRANT_PATH = os.getenv("QDRANT_PATH")
     QDRANT_COLLECTION_NAME = os.getenv("QDRANT_COLLECTION_NAME")
-    REDIS_URL = os.getenv("REDIS_URL")
-    
+    BASE_UPLOAD_DIR = os.getenv("BASE_UPLOAD_DIR")
+
+
     # MySQL 数据库配置
     MYSQL_HOST = os.getenv("MYSQL_HOST")
     MYSQL_PORT = int(os.getenv("MYSQL_PORT", 3306))
@@ -83,7 +85,8 @@ class BotConfig:
         """获取 Qdrant 配置"""
         return {
             "path": cls.QDRANT_PATH,
-            "collection_name": cls.QDRANT_COLLECTION_NAME
+            "collection_name": cls.QDRANT_COLLECTION_NAME,
+            "base_upload_dir":cls.BASE_UPLOAD_DIR,
         }
     
     @classmethod

@@ -15,7 +15,7 @@ from langchain_core.runnables import RunnableLambda
 from langchain_openai import OpenAI, ChatOpenAI
 
 from models.user import User
-from services.knowledge_service import KnowledgeService
+from services.knowledge_service import knowledge_service
 from utils.helpers import delete_think
 from config.settings import config
 from config.logger import tools_logger
@@ -40,7 +40,7 @@ def get_info_from_knowledge( query: str,callbacks: Optional[CallbackManagerForTo
     只有回答资产,公司，2023年，宏图科技发展有限公司相关问题，会使用这个工具
     """
     session_id = callbacks.metadata['session_id']
-    knowledge_result = KnowledgeService.search_user_knowledge(query, session_id)
+    knowledge_result = knowledge_service.search_user_knowledge(query, session_id)
     tools_logger.info(f"知识库返回的结果: {knowledge_result}")
     return knowledge_result
 

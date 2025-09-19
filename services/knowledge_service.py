@@ -15,15 +15,15 @@ from utils.helpers import format_error_message
 
 class KnowledgeService:
     """知识库写入服务"""
+    def __init__(self):
+        self.qdrant_config = config.get_qdrant_config()
+        self.BASE_UPLOAD_DIR = self.qdrant_config.base_upload_dir
+        self.BASE_QDRANT_DIR = self.qdrant_config.path
+        self.COLLECTION_NAME = self.qdrant_config.collection_name
 
-    BASE_UPLOAD_DIR = "./uploads"  # 所有用户上传文件根目录
-    BASE_QDRANT_DIR = "./qdrant"   # 所有用户向量数据库根目录
-    COLLECTION_NAME = "knowledge_base"  # 统一的知识库 collection 名
-
-    @staticmethod
-    def save_upload_file(file: UploadFile, session_id: str) -> str:
+    def save_upload_file(self, file: UploadFile, session_id: str) -> str:
         """保存上传文件到用户目录"""
-        user_dir = os.path.join(KnowledgeService.BASE_UPLOAD_DIR, f"{session_id}")
+        user_dir = os.path.join(self.BASE_UPLOAD_DIR, f"{session_id}")
         os.makedirs(user_dir, exist_ok=True)
         file_path = os.path.join(user_dir, file.filename)
 
@@ -32,10 +32,9 @@ class KnowledgeService:
 
         return file_path
 
-    @staticmethod
-    def load_from_file(file: UploadFile, session_id: str):
+    def load_from_file(self, file: UploadFile, session_id: str):
         """加载文件内容"""
-        file_path = KnowledgeService.save_upload_file(file, session_id)
+        file_path = self.save_upload_file(file, session_id)
         ext = file.filename.split(".")[-1].lower()
         try:
             if ext == "pdf":
@@ -72,8 +71,7 @@ class KnowledgeService:
         )
         return splitter.split_documents(docs)
 
-    @staticmethod
-    def add_to_qdrant(documents, session_id: str):
+    def add_to_qdrant(self, documents, session_id: str):
         """写入统一 Collection，按 session_id 区分"""
         embedding_config = config.get_embedding_config()
 
@@ -84,28 +82,25 @@ class KnowledgeService:
         Qdrant.from_documents(
             documents,
             OllamaEmbeddings(**embedding_config),
-            path=KnowledgeService.BASE_QDRANT_DIR,
-            collection_name=KnowledgeService.COLLECTION_NAME
+            path=self.BASE_QDRANT_DIR,
+            collection_name=self.COLLECTION_NAME
         )
-        server_logger.info(f"数据已成功添加到对话框 {session_id} 的知识库 (collection:{KnowledgeService.COLLECTION_NAME})")
-        return {"response": f"数据已成功添加到对话框 {session_id} 的知识库 (collection:{KnowledgeService.COLLECTION_NAME})"}
+        server_logger.info(f"数据已成功添加到对话框 {session_id} 的知识库 (collection:{self.COLLECTION_NAME})")
+        return {"response": f"数据已成功添加到对话框 {session_id} 的知识库 (collection:{self.COLLECTION_NAME})"}
 
-    @staticmethod
-    def process_file(file: UploadFile, session_id: str):
+    def process_file(self, file: UploadFile, session_id: str):
         """处理上传文件"""
-        docs, _ = KnowledgeService.load_from_file(file, session_id)
+        docs, _ = self.load_from_file(file, session_id)
         documents = KnowledgeService.split_documents(docs)
-        return KnowledgeService.add_to_qdrant(documents, session_id)
+        return self.add_to_qdrant(documents, session_id)
 
-    @staticmethod
-    def process_url(url: str, session_id: str):
+    def process_url(self, url: str, session_id: str):
         """处理 URL"""
         docs, _ = KnowledgeService.load_from_url(url)
         documents = KnowledgeService.split_documents(docs)
-        return KnowledgeService.add_to_qdrant(documents, session_id)
+        return self.add_to_qdrant(documents, session_id)
 
-    @staticmethod
-    def search_user_knowledge(query: str, session_id: str, k: int = 1) -> str:
+    def search_user_knowledge(self, query: str, session_id: str, k: int = 1) -> str:
         """在用户专属向量数据库中检索相关内容"""
         try:
             embedding_config = config.get_embedding_config()
@@ -114,8 +109,8 @@ class KnowledgeService:
             # 创建 Qdrant 实例 (使用正确的初始化方式)
             qdrant = Qdrant.from_existing_collection(
                 embedding=embeddings,
-                path=KnowledgeService.BASE_QDRANT_DIR,
-                collection_name=KnowledgeService.COLLECTION_NAME
+                path=self.BASE_QDRANT_DIR,
+                collection_name=self.COLLECTION_NAME
             )
 
             # 使用过滤器只检索该用户的数据
@@ -155,8 +150,7 @@ class KnowledgeService:
             raise HTTPException(status_code=500, detail="知识库检索失败")
 
 
-    @staticmethod
-    def delete_user_knowledge(session_id: str) -> dict:
+    def delete_user_knowledge(self, session_id: str) -> dict:
         """删除用户专属向量数据库中的内容"""
         try:
             embedding_config = config.get_embedding_config()
@@ -165,8 +159,8 @@ class KnowledgeService:
             # 创建 Qdrant 实例
             qdrant = Qdrant.from_existing_collection(
                 embedding=embeddings,
-                path=KnowledgeService.BASE_QDRANT_DIR,
-                collection_name=KnowledgeService.COLLECTION_NAME
+                path=self.BASE_QDRANT_DIR,
+                collection_name=self.COLLECTION_NAME
             )
 
             # 构建过滤条件，匹配指定 session_id 的数据
@@ -182,7 +176,7 @@ class KnowledgeService:
             # 获取要删除的点ID
             # 注意：Qdrant 删除操作需要点ID，所以我们需要先查询再删除
             search_result = qdrant.client.scroll(
-                collection_name=KnowledgeService.COLLECTION_NAME,
+                collection_name=self.COLLECTION_NAME,
                 scroll_filter=filter_condition,
                 limit=10000,  # 设置一个较大的限制以获取所有匹配项
                 with_payload=True,
@@ -195,7 +189,7 @@ class KnowledgeService:
             if point_ids:
                 # 执行删除操作
                 qdrant.client.delete(
-                    collection_name=KnowledgeService.COLLECTION_NAME,
+                    collection_name=self.COLLECTION_NAME,
                     points_selector=point_ids
                 )
 
@@ -216,12 +210,11 @@ class KnowledgeService:
             server_logger.error(error_msg)
             raise HTTPException(status_code=500, detail="知识库删除失败")
 
-    @staticmethod
-    def delete_upload_files(session_id: str) -> dict:
+    def delete_upload_files(self, session_id: str) -> dict:
         """删除指定 session_id 的上传文件"""
         try:
             # 构建用户目录路径
-            user_dir = os.path.join(KnowledgeService.BASE_UPLOAD_DIR, f"{session_id}")
+            user_dir = os.path.join(self.BASE_UPLOAD_DIR, f"{session_id}")
 
             # 检查目录是否存在
             if os.path.exists(user_dir) and os.path.isdir(user_dir):
@@ -243,3 +236,6 @@ class KnowledgeService:
             error_msg = format_error_message(e, f"删除用户当前对话框 {session_id} 的上传文件")
             server_logger.error(error_msg)
             raise HTTPException(status_code=500, detail="文件删除失败")
+
+# 全局 TTS 服务实例
+knowledge_service = KnowledgeService()

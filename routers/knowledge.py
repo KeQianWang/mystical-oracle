@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 
 from database.connection import get_db
 from models.user import UserResponse
-from services.knowledge_service import KnowledgeService
+from services.knowledge_service import knowledge_service
 from services.session_service import SessionService
 from utils.helpers import format_error_message
 from config.logger import server_logger
@@ -30,9 +30,9 @@ async def add_knowledge(
         session_id = default_session.session_id
 
         if url:
-            return KnowledgeService.process_url(url, session_id)
+            return knowledge_service.process_url(url, session_id)
         elif file:
-            return KnowledgeService.process_file(file, session_id)
+            return knowledge_service.process_file(file, session_id)
         else:
             raise HTTPException(status_code=400, detail="必须提供 URL 或文件")
     except Exception as e:

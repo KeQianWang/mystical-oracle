@@ -10,7 +10,7 @@ from sqlalchemy import and_, desc, func
 from models.database import ChatSession, ChatHistory
 from models.user import ChatSessionCreate, ChatSessionUpdate
 from config.logger import server_logger
-from services.knowledge_service import KnowledgeService
+from services.knowledge_service import knowledge_service
 from services.redis_service import RedisService
 
 
@@ -90,9 +90,9 @@ class SessionService:
         # db.commit()
 
         # 删除知识库
-        KnowledgeService.delete_user_knowledge(session_id)
+        knowledge_service.delete_user_knowledge(session_id)
         # 删除上传文件
-        KnowledgeService.delete_upload_files(session_id)
+        knowledge_service.delete_upload_files(session_id)
         #删除记忆
         RedisService.clear_chat_history(session_id)
 

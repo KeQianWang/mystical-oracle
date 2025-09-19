@@ -114,9 +114,7 @@ async def websocket_endpoint(
 
             try:
                 # 使用与chat.py相同的核心处理逻辑
-                response_data = await process_websocket_message(
-                    data, current_user, db, websocket
-                )
+                response_data = await process_websocket_message(data, current_user, db)
 
                 # 发送回复
                 await websocket.send_json(response_data)

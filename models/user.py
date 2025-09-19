@@ -173,7 +173,7 @@ class ChatSessionResponse(BaseModel):
 class ChatRequest(BaseModel):
     """聊天请求模型"""
     query: str
-    session_id: str
+    session_id: str = ""
     enable_tts: bool = True
 
 

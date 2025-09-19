@@ -3,7 +3,7 @@
 处理会话的创建、查询、更新和删除操作
 """
 from datetime import datetime, timezone
-from typing import List, Optional
+from typing import List, Optional, Any
 from sqlalchemy.orm import Session
 from sqlalchemy import and_, desc, func
 
@@ -37,18 +37,7 @@ class SessionService:
         
         server_logger.info(f"创建新会话: user_id={user_id}, session_id={session_id}")
         return db_session
-    
-    @staticmethod
-    def get_user_sessions(db: Session, user_id: int, skip: int = 0, limit: int = 50) -> List[ChatSession]:
-        """获取用户的所有会话"""
-        sessions = db.query(ChatSession).filter(
-            and_(
-                ChatSession.user_id == user_id
-            )
-        ).order_by(desc(ChatSession.updated_at)).offset(skip).limit(limit).all()
-        
-        return sessions
-    
+
     @staticmethod
     def get_session_by_id(db: Session, session_id: str, user_id: int) -> Optional[ChatSession]:
         """根据session_id获取会话"""
@@ -82,12 +71,12 @@ class SessionService:
     def delete_session(db: Session, session_id: str, user_id: int) -> bool:
         """删除会话（真实删除）"""
         session = SessionService.get_session_by_id(db, session_id, user_id)
-        # if not session:
-        #     return False
-        #
-        # # 真实删除会话记录
-        # db.delete(session)
-        # db.commit()
+        if not session:
+            return False
+
+        # 真实删除会话记录
+        db.delete(session)
+        db.commit()
 
         # 删除知识库
         knowledge_service.delete_user_knowledge(session_id)
@@ -131,19 +120,7 @@ class SessionService:
         
         return result
     
-    @staticmethod
-    def ensure_default_session(db: Session, user_id: int) -> ChatSession:
-        """确保用户有默认会话，如果没有则创建"""
-        # 查找用户的活跃会话
-        active_sessions = SessionService.get_user_sessions(db, user_id, limit=1)
-        
-        if active_sessions:
-            return active_sessions[0]
-        
-        # 创建默认会话
-        default_session = ChatSessionCreate(title="新对话")
-        return SessionService.create_session(db, user_id, default_session)
-    
+
     @staticmethod
     def update_session_activity(db: Session, session_id: str, user_id: int) -> None:
         """更新会话活跃时间"""

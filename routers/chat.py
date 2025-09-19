@@ -7,7 +7,7 @@ from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks
 from sqlalchemy.orm import Session
 
 from agent import Master
-from models.user import ChatRequest, UserResponse
+from models.user import ChatRequest, UserResponse, ChatSessionCreate
 from utils.helpers import validate_user_input, format_error_message
 from config.logger import server_logger
 from services.auth import get_current_active_user
@@ -29,17 +29,20 @@ def chat(
         # 验证输入
         if not validate_user_input(chat_request.query):
             raise HTTPException(status_code=400, detail="输入内容无效")
-        
-        # 获取或创建用户的默认会话
-        default_session = SessionService.ensure_default_session(db, current_user.id)
-        session_id = default_session.session_id
+
+
+        if not chat_request.session_id:
+            session = SessionService.create_session(db, current_user.id, ChatSessionCreate(title="默认会话"))
+            chat_request.session_id = session.session_id
+
+        session_id = chat_request.session_id
         
         # 更新会话活跃时间
         SessionService.update_session_activity(db, session_id, current_user.id)
         
         # 创建算命师实例并处理对话
-        master = Master(session_id=session_id)
-        result = master.run(chat_request.query, user_id=current_user.id)
+        master = Master(session_id=session_id,user_id=current_user.id)
+        result = master.run(chat_request.query)
         
         # 生成唯一 ID 用于音频文件
         unique_id = str(uuid.uuid4())

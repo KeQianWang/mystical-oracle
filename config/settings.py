@@ -39,7 +39,6 @@ class BotConfig:
     JWT_EXPIRE_MINUTES = int(os.getenv("JWT_EXPIRE_MINUTES", 720))  # 12小时
     
     # Agent 配置
-    DEFAULT_SESSION_ID = os.getenv("DEFAULT_SESSION_ID")
     MEMORY_KEY = os.getenv("MEMORY_KEY")
     MAX_HISTORY_MESSAGES = int(os.getenv("MAX_HISTORY_MESSAGES"))  # 超过此数量会进行摘要
     

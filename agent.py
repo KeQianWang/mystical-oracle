@@ -25,10 +25,11 @@ from config.logger import agent_logger
 class Master:
     """算命大师 Agent 类 - 优化版本"""
     
-    def __init__(self, session_id: Optional[str] = None):
+    def __init__(self, session_id: Optional[str] = None, user_id: Optional[int] = None):
         """初始化算命大师"""
         # 基础配置
-        self.session_id = session_id or config.DEFAULT_SESSION_ID
+        self.session_id = session_id
+        self.user_id = user_id
         self.memory_key = config.MEMORY_KEY
         self.current_mood = MoodPrompts.get_default_mood()
         
@@ -84,7 +85,7 @@ class Master:
             history_messages_key=self.memory_key,
         )
     
-    def run(self, query: str, user_id: int = None) -> Dict[str, Any]:
+    def run(self, query: str) -> Dict[str, Any]:
         """运行算命师对话"""
         try:
             # 情绪分析
@@ -100,8 +101,8 @@ class Master:
             result = self.agent_executor.invoke({'input': query}, config=config_obj)
             
             # 保存聊天历史记录（如果提供了用户ID）
-            if user_id:
-                self._save_chat_history(user_id, query, result.get("output", ""))
+            if self.user_id:
+                self._save_chat_history(query, result.get("output", ""))
             
             return result
             
@@ -109,7 +110,7 @@ class Master:
             agent_logger.error(f"对话执行出错: {e}")
             return {"output": "老夫此时无法为你算卦，请稍后再试。"}
     
-    def _save_chat_history(self, user_id: int, user_message: str, assistant_message: str) -> None:
+    def _save_chat_history(self, user_message: str, assistant_message: str) -> None:
         """保存聊天历史记录到数据库"""
         try:
             from database.connection import get_db_context
@@ -118,7 +119,7 @@ class Master:
             with get_db_context() as db:
                 ChatHistoryService.add_chat_history(
                     db=db,
-                    user_id=user_id,
+                    user_id=self.user_id,
                     session_id=self.session_id,
                     user_message=user_message,
                     assistant_message=assistant_message,
@@ -126,7 +127,7 @@ class Master:
                     message_type="text"
                 )
             
-            agent_logger.debug(f"聊天历史已保存: user_id={user_id}, session_id={self.session_id}")
+            agent_logger.debug(f"聊天历史已保存: user_id={self.user_id}, session_id={self.session_id}")
             
         except Exception as e:
             agent_logger.error(f"保存聊天历史失败: {e}")

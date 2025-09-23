@@ -6,7 +6,6 @@ from typing import Optional, Dict, Any
 
 from langchain.agents import AgentExecutor, create_openai_tools_agent
 from langchain_community.chat_message_histories import RedisChatMessageHistory
-from langchain_openai import ChatOpenAI
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.prompts import MessagesPlaceholder, ChatPromptTemplate
 from langchain_core.runnables import RunnableLambda, RunnableWithMessageHistory, RunnableConfig
@@ -30,27 +29,17 @@ class Master:
         # 基础配置
         self.session_id = session_id
         self.user_id = user_id
-        self.memory_key = config.MEMORY_KEY
+        self.memory_key = "chat_history"
         self.current_mood = MoodPrompts.get_default_mood()
         
         # 初始化聊天模型
-        self.chat_model = self._init_chat_model()
+        self.chat_model = config.get_model_config()
         
         # 缓存 Agent 组件，避免重复初始化
         self._agent_executor = None
         
         # 初始化 Agent 执行器
         self.agent_executor = self._init_agent_executor()
-
-    def _init_chat_model(self) -> ChatOpenAI:
-        # def _init_chat_model(self) -> ChatOllama:
-        """初始化聊天模型"""
-        # model_config = config.get_model_config()
-        # return ChatOllama(**model_config)
-        return ChatOpenAI(
-            model="gpt-4o-mini",
-            temperature=0.2,
-        )
     
     def _init_agent_executor(self) -> RunnableWithMessageHistory:
         """初始化 Agent 执行器"""

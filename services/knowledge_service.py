@@ -3,7 +3,6 @@ import shutil
 
 from fastapi import HTTPException, UploadFile
 from langchain_community.document_loaders import WebBaseLoader, PyPDFLoader, Docx2txtLoader, UnstructuredExcelLoader
-from langchain_ollama import OllamaEmbeddings
 from langchain_qdrant import Qdrant
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from qdrant_client.models import Filter, FieldCondition, MatchValue
@@ -73,20 +72,29 @@ class KnowledgeService:
 
     def add_to_qdrant(self, documents, session_id: str):
         """写入统一 Collection，按 session_id 区分"""
-        embedding_config = config.get_embedding_config()
+        try:
+            embeddings = config.get_embedding_model()
 
-        # 为每个文档添加 session_id 元数据
-        for doc in documents:
-            doc.metadata["session_id"] = session_id
+            # 为每个文档添加 session_id 元数据
+            for doc in documents:
+                doc.metadata["session_id"] = session_id
 
-        Qdrant.from_documents(
-            documents,
-            OllamaEmbeddings(**embedding_config),
-            path=self.BASE_QDRANT_DIR,
-            collection_name=self.COLLECTION_NAME
-        )
-        server_logger.info(f"数据已成功添加到对话框 {session_id} 的知识库 (collection:{self.COLLECTION_NAME})")
-        return {"response": f"数据已成功添加到对话框 {session_id} 的知识库 (collection:{self.COLLECTION_NAME})"}
+            # 添加文档到 Qdrant
+            Qdrant.from_documents(
+                documents,
+                embeddings,
+                path=self.BASE_QDRANT_DIR,
+                collection_name=self.COLLECTION_NAME
+            )
+
+            server_logger.info(f"数据已成功添加到对话框 {session_id} 的知识库 (collection:{self.COLLECTION_NAME})")
+            return {"response": f"数据已成功添加到对话框 {session_id} 的知识库 (collection:{self.COLLECTION_NAME})"}
+
+        except Exception as e:
+            # 处理其他所有异常
+            error_msg = format_error_message(e, f"添加文档到知识库: session_id={session_id}")
+            server_logger.error(error_msg)
+            raise HTTPException(status_code=500, detail="添加文档到知识库失败，请稍后再试")
 
     def process_file(self, file: UploadFile, session_id: str):
         """处理上传文件"""
@@ -103,10 +111,9 @@ class KnowledgeService:
     def search_user_knowledge(self, query: str, session_id: str, k: int = 1) -> str:
         """在用户专属向量数据库中检索相关内容"""
         try:
-            embedding_config = config.get_embedding_config()
-            embeddings = OllamaEmbeddings(**embedding_config)
+            embeddings = config.get_embedding_model()
 
-            # 创建 Qdrant 实例 (使用正确的初始化方式)
+            # 创建 Qdrant 实例
             qdrant = Qdrant.from_existing_collection(
                 embedding=embeddings,
                 path=self.BASE_QDRANT_DIR,
@@ -153,8 +160,7 @@ class KnowledgeService:
     def delete_user_knowledge(self, session_id: str) -> dict:
         """删除用户专属向量数据库中的内容"""
         try:
-            embedding_config = config.get_embedding_config()
-            embeddings = OllamaEmbeddings(**embedding_config)
+            embeddings = config.get_embedding_model()
 
             # 创建 Qdrant 实例
             qdrant = Qdrant.from_existing_collection(

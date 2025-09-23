@@ -5,6 +5,8 @@
 import os
 from typing import Dict, Any
 from dotenv import load_dotenv
+from langchain_ollama import OllamaEmbeddings, ChatOllama
+from langchain_openai import OpenAIEmbeddings, ChatOpenAI
 
 # 加载环境变量
 load_dotenv()
@@ -13,10 +15,20 @@ load_dotenv()
 class BotConfig:
     """机器人配置类"""
     
-    # 模型配置
+    # ollama模型配置
     OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL")
-    CHAT_MODEL_NAME = os.getenv("CHAT_MODEL_NAME")
-    EMBEDDING_MODEL_NAME = os.getenv("EMBEDDING_MODEL_NAME")
+    OLLAMA_MODEL_NAME = os.getenv("OLLAMA_MODEL_NAME")
+
+    #openAi模型配置
+    OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+    OPENAI_API_BASE = os.getenv("OPENAI_API_BASE")
+    OPENAI_MODEL = os.getenv("OPENAI_MODEL")
+
+    #embedding模型配置
+    OLLAMA_EMBEDDINGS = os.getenv("OLLAMA_EMBEDDINGS")
+    OPEN_AI_EMBEDDINGS = os.getenv("OPEN_AI_EMBEDDINGS")
+
+
     MODEL_TEMPERATURE = float(os.getenv("MODEL_TEMPERATURE"))
     
     # 数据库配置
@@ -64,21 +76,28 @@ class BotConfig:
     MOOD_TYPES = ["default", "upbeat", "angry", "depressed", "friendly", "cheerful"]
     
     @classmethod
-    def get_model_config(cls) -> Dict[str, Any]:
-        """获取模型配置"""
-        return {
-            "base_url": cls.OLLAMA_BASE_URL,
-            "model": cls.CHAT_MODEL_NAME,
-            "temperature": cls.MODEL_TEMPERATURE
-        }
-    
+    def get_model_config(cls) -> None | ChatOllama | ChatOpenAI:
+        """获取聊天模型配置"""
+        temperature = cls.MODEL_TEMPERATURE
+        if cls.OPENAI_MODEL:
+            model_name = cls.OPENAI_MODEL
+            return ChatOpenAI(model=model_name,temperature=temperature)
+        elif cls.OLLAMA_MODEL_NAME:
+            model_name = cls.OLLAMA_MODEL_NAME
+            return ChatOllama(model=model_name,temperature=temperature)
+        return None
+
     @classmethod
-    def get_embedding_config(cls) -> Dict[str, Any]:
+    def get_embedding_model(cls) -> None | OllamaEmbeddings | OpenAIEmbeddings:
         """获取嵌入模型配置"""
-        return {
-            "model": cls.EMBEDDING_MODEL_NAME
-        }
-    
+        if cls.OPEN_AI_EMBEDDINGS:
+            model_name = cls.OPEN_AI_EMBEDDINGS
+            return OpenAIEmbeddings(model=model_name)
+        elif cls.OLLAMA_EMBEDDINGS:
+            model_name = cls.OLLAMA_EMBEDDINGS
+            return OllamaEmbeddings(model=model_name)
+        return None
+
     @classmethod
     def get_qdrant_config(cls) -> Dict[str, Any]:
         """获取 Qdrant 配置"""

@@ -12,7 +12,8 @@ from langchain_core.callbacks import CallbackManagerForToolRun
 from langchain_core.output_parsers import JsonOutputParser, StrOutputParser
 from langchain_core.prompts import ChatPromptTemplate, PromptTemplate
 from langchain_core.runnables import RunnableLambda
-from langchain_openai import OpenAI, ChatOpenAI
+from langchain_ollama import ChatOllama
+from langchain_openai import ChatOpenAI
 
 from models.user import User
 from services.knowledge_service import knowledge_service
@@ -67,19 +68,18 @@ def bazi_cesuan(query: str) -> str:
         )
         
         # 创建模型
-        model_config = config.get_model_config()
-        # model = ChatOllama(**model_config, format="json")
-        model = ChatOpenAI(
-            model="gpt-4o-mini",
-            temperature=0.2,
-        )
+        model = config.get_model_config()
+        if isinstance(model, ChatOpenAI):
+            model.model_kwargs = {"response_format": {"type": "json_object"}}
+        elif isinstance(model, ChatOllama):
+            model.format = "json"  # ChatOllama 支持的参数
 
         # 构建处理链
         chain = prompt | model | parser
         data = chain.invoke({"query": query})
-        
+
         tools_logger.debug(f'八字查询请求参数: {data}')
-        
+
         # 调用 API
         result = requests.post(url, data=data)
         if result.status_code == 200:
@@ -126,12 +126,7 @@ def jiemeng(query: str) -> str:
         url = config.YUANFENJU_ENDPOINTS["jiemeng"]
         
         # 创建关键词提取模型
-        model_config = config.get_model_config()
-        # llm = OllamaLLM(**model_config)
-        llm = OpenAI(
-            model="gpt-4o-mini",
-            temperature=0.2
-        )
+        llm = config.get_model_config()
 
         # 直接使用统一管理的模板
         dream_prompt_template = SystemPrompts.DREAM_KEYWORD_EXTRACTION_PROMPT

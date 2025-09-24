@@ -68,7 +68,7 @@ def bazi_cesuan(query: str) -> str:
         )
         
         # 创建模型
-        model = config.get_model_config()
+        model = config.get_model()
         if isinstance(model, ChatOpenAI):
             model.model_kwargs = {"response_format": {"type": "json_object"}}
         elif isinstance(model, ChatOllama):
@@ -126,7 +126,7 @@ def jiemeng(query: str) -> str:
         url = config.YUANFENJU_ENDPOINTS["jiemeng"]
         
         # 创建关键词提取模型
-        llm = config.get_model_config()
+        llm = config.get_model()
 
         # 直接使用统一管理的模板
         dream_prompt_template = SystemPrompts.DREAM_KEYWORD_EXTRACTION_PROMPT

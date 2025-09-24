@@ -76,7 +76,7 @@ class BotConfig:
     MOOD_TYPES = ["default", "upbeat", "angry", "depressed", "friendly", "cheerful"]
     
     @classmethod
-    def get_model_config(cls) -> None | ChatOllama | ChatOpenAI:
+    def get_model(cls) -> None | ChatOllama | ChatOpenAI:
         """获取聊天模型配置"""
         temperature = cls.MODEL_TEMPERATURE
         if cls.OPENAI_MODEL:

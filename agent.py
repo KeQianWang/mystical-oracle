@@ -33,7 +33,7 @@ class Master:
         self.current_mood = MoodPrompts.get_default_mood()
         
         # 初始化聊天模型
-        self.chat_model = config.get_model_config()
+        self.chat_model = config.get_model()
         
         # 缓存 Agent 组件，避免重复初始化
         self._agent_executor = None

@@ -153,17 +153,20 @@ class Master:
             self.current_mood = MoodPrompts.get_default_mood()
             return self.current_mood
     
+    def _needs_prompt_update(self) -> bool:
+        """检查是否需要更新提示词 - 基于情绪变化优化"""
+        # 更精细的逻辑：只在情绪实际改变时更新
+        if hasattr(self, '_last_mood'):
+            return self._last_mood != self.current_mood
+        return True
+
     def _update_prompt_if_needed(self) -> None:
-        """根据情绪更新提示词（仅在需要时）"""
-        # 只在情绪变化时重新初始化
-        if self._agent_executor is None or self._needs_prompt_update():
+        """根据情绪更新提示词（仅在需要时） - 优化版本"""
+        if self._needs_prompt_update():
+            self._last_mood = self.current_mood  # 记录当前情绪
             self._agent_executor = None  # 清空缓存
             self.agent_executor = self._init_agent_executor()
-    
-    def _needs_prompt_update(self) -> bool:
-        """检查是否需要更新提示词"""
-        # 这里可以添加更精细的逻辑来判断是否需要更新
-        return True  # 目前简化为总是更新
+            agent_logger.debug(f"提示词已更新，当前情绪: {self.current_mood}")
 
     def _get_memory(self) -> RedisChatMessageHistory:
         """获取和管理聊天记录"""

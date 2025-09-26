@@ -1,12 +1,10 @@
 """
 Mystical Oracle User Model - 用户数据模型
-优化后的数据模型，使用配置管理
 """
 from datetime import datetime
 from typing import Optional
 from pydantic import BaseModel, EmailStr, field_validator, constr, Field
 from config.settings import config
-
 
 class User(BaseModel):
     """用户信息模型 - 用于八字查询"""
@@ -84,8 +82,6 @@ class User(BaseModel):
             raise ValueError('分钟必须在 0-59 之间')
         return v
 
-
-# 新增用户认证相关模型
 class UserCreate(BaseModel):
     """用户注册模型"""
     username: constr(min_length=2, max_length=50)
@@ -134,24 +130,9 @@ class TokenData(BaseModel):
     user_id: Optional[int] = None
     username: Optional[str] = None
 
-
-class ChatSession(BaseModel):
-    """聊天会话模型"""
-    id: Optional[int] = None
-    user_id: int
-    session_id: str
-    title: str
-    created_at: Optional[datetime] = None
-    updated_at: Optional[datetime] = None
-
-    class Config:
-        from_attributes = True
-
-
 class ChatSessionCreate(BaseModel):
     """创建聊天会话模型"""
     title: str
-
 
 class ChatSessionUpdate(BaseModel):
     """更新聊天会话模型"""
@@ -174,9 +155,5 @@ class ChatRequest(BaseModel):
     """聊天请求模型"""
     query: str
     session_id: Optional[str] = None
-    enable_tts: bool = True
-
-
-class KnowledgeInput(BaseModel):
-    query: str = Field(..., description="要查询的内容")
-    session_id: str = Field(..., description="用户的唯一标识")
+    enable_tts: bool = False
+    async_mode: bool = False

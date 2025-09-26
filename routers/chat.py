@@ -3,18 +3,19 @@
 包含主要的对话功能接口
 """
 import uuid
-from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks
+from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks, Query
+from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 
-from agent import Master
-from models.user import ChatRequest, UserResponse, ChatSessionCreate
-from utils.helpers import validate_user_input, format_error_message
+from models.user import ChatRequest, UserResponse
+from services.chat_service import ChatService
+from utils.helpers import  format_error_message
 from config.logger import server_logger
 from services.auth import get_current_active_user
 from database.connection import get_db
-from services.session_service import SessionService
 
 router = APIRouter(tags=["聊天接口"])
+
 
 
 @router.post("/chat")
@@ -22,37 +23,24 @@ def chat(
     chat_request: ChatRequest,
     background_tasks: BackgroundTasks,
     current_user: UserResponse = Depends(get_current_active_user),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
     """与算命师对话，支持语音合成"""
     try:
-        # 验证输入
-        if not validate_user_input(chat_request.query):
-            raise HTTPException(status_code=400, detail="输入内容无效")
+        session_id, master = ChatService.prepare_chat_context(chat_request, db, current_user)
 
-
-        if not chat_request.session_id:
-            session = SessionService.create_session(db, current_user.id, ChatSessionCreate(title="默认会话"))
-            chat_request.session_id = session.session_id
-
-        session_id = chat_request.session_id
-
-        # 更新会话活跃时间
-        SessionService.update_session_activity(db, session_id, current_user.id)
-
-        # 创建算命师实例并处理对话
-        master = Master(session_id=session_id,user_id=current_user.id)
+        # 执行对话
         result = master.run(chat_request.query)
 
-        # 生成唯一 ID 用于音频文件
+        # 唯一 ID
         unique_id = str(uuid.uuid4())
 
-        # 后台任务：语音合成
+        # 后台执行 TTS
         if result.get("output") and chat_request.enable_tts:
             background_tasks.add_task(
                 master.synthesize_speech_background,
                 result["output"],
-                unique_id
+                unique_id,
             )
 
         return {
@@ -60,10 +48,50 @@ def chat(
             "id": unique_id,
             "session_id": session_id,
             "mood": master.get_current_mood(),
-            "voice_style": master.get_voice_style()
+            "voice_style": master.get_voice_style(),
         }
 
     except Exception as e:
         error_msg = format_error_message(e, "对话处理")
+        server_logger.error(error_msg)
+        raise HTTPException(status_code=500, detail="服务暂时不可用，请稍后再试")
+
+
+@router.post("/chat/stream")
+async def chat_stream(
+    chat_request: ChatRequest,
+    current_user: UserResponse = Depends(get_current_active_user),
+    db: Session = Depends(get_db),
+):
+    """与算命师流式对话 (支持同步/异步两种模式)"""
+    try:
+        session_id, master = ChatService.prepare_chat_context(chat_request, db, current_user)
+        unique_id = str(uuid.uuid4())
+
+        if chat_request.async_mode:
+            # 异步流
+            result_generator = master.run_stream_async(chat_request.query)
+            stream_gen = ChatService.async_stream_response_generator(
+                result_generator,
+                unique_id,
+                session_id,
+                master.get_current_mood(),
+                master.get_voice_style(),
+            )
+        else:
+            # 同步流
+            result_generator = master.run_stream(chat_request.query)
+            stream_gen = ChatService.stream_response_generator(
+                result_generator,
+                unique_id,
+                session_id,
+                master.get_current_mood(),
+                master.get_voice_style(),
+            )
+
+        return StreamingResponse(stream_gen, media_type="text/event-stream", headers=ChatService.sse_headers())
+
+    except Exception as e:
+        error_msg = format_error_message(e, "流式对话处理")
         server_logger.error(error_msg)
         raise HTTPException(status_code=500, detail="服务暂时不可用，请稍后再试")

@@ -4,11 +4,15 @@
 """
 import os
 from typing import Dict, Any, Optional, Union
+
+from dotenv import load_dotenv
 from langchain_ollama import OllamaEmbeddings, ChatOllama
 from langchain_openai import OpenAIEmbeddings, ChatOpenAI
 
 from config.logger import logger
 
+# 加载 .env 文件
+load_dotenv()
 
 class BotConfig:
     """机器人配置类"""
@@ -56,10 +60,6 @@ class BotConfig:
     TTS_OUTPUT_FORMAT: Optional[str] = os.getenv("TTS_OUTPUT_FORMAT")
     AUDIO_OUTPUT_DIR: Optional[str] = os.getenv("AUDIO_OUTPUT_DIR")
 
-    # === 其他配置 ===
-    MEMORY_KEY: Optional[str] = os.getenv("MEMORY_KEY")
-    MOOD_TYPES = ["default", "upbeat", "angry", "depressed", "friendly", "cheerful"]
-
     YUANFENJU_ENDPOINTS = {
         "bazi_cesuan": "https://api.yuanfenju.com/index.php/v1/Bazi/cesuan",
         "yaoyigua": "https://api.yuanfenju.com/index.php/v1/Zhanbu/meiri",
@@ -94,6 +94,7 @@ class BotConfig:
                 temperature=cls.MODEL_TEMPERATURE,
                 api_key=cls.OPENAI_API_KEY,
                 base_url=cls.OPENAI_API_BASE or None,
+                streaming=True,
             )
         elif cls.OLLAMA_MODEL_NAME and cls.OLLAMA_BASE_URL:
             return ChatOllama(

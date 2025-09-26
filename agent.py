@@ -2,7 +2,7 @@
 Mystical Oracle Agent - 神秘预言师核心模块
 将配置、提示词模板分离，提高代码可维护性，并集成语音合成功能
 """
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, AsyncGenerator, Generator
 
 from langchain.agents import AgentExecutor, create_openai_tools_agent
 from langchain_community.chat_message_histories import RedisChatMessageHistory
@@ -73,7 +73,63 @@ class Master:
             output_messages_key="output",
             history_messages_key=self.memory_key,
         )
-    
+
+    def run_stream(self, query: str) -> Generator[str, None, None]:
+        """流式运行算命师对话 - 字符级输出"""
+        try:
+            # 情绪分析
+            self._analyze_emotion(query)
+
+            # 更新提示词（仅在情绪变化时）
+            self._update_prompt_if_needed()
+
+            # 配置会话
+            config_obj = RunnableConfig(configurable={"session_id": self.session_id})
+
+            # 执行流式对话 - 直接获取模型输出的token
+            for chunk in self.agent_executor.stream({'input': query}, config=config_obj):
+                # 处理不同类型的chunk
+                if 'output' in chunk and chunk['output']:
+                    # 直接yield每个token/字符
+                    yield chunk['output']
+                elif 'messages' in chunk:
+                    # 处理消息类型的chunk
+                    for msg in chunk['messages']:
+                        if hasattr(msg, 'content') and msg.content:
+                            yield msg.content
+
+        except Exception as e:
+            agent_logger.error(f"流式对话执行出错: {e}")
+            yield "老夫此时无法为你算卦，请稍后再试。"
+
+    async def run_stream_async(self, query: str) -> AsyncGenerator[str, None]:
+        """异步流式运行算命师对话 - 字符级输出"""
+        try:
+            # 情绪分析
+            self._analyze_emotion(query)
+
+            # 更新提示词（仅在情绪变化时）
+            self._update_prompt_if_needed()
+
+            # 配置会话
+            config_obj = RunnableConfig(configurable={"session_id": self.session_id})
+
+            # 执行异步流式对话 - 直接获取模型输出的token
+            async for chunk in self.agent_executor.astream({'input': query}, config=config_obj):
+                # 处理不同类型的chunk
+                if 'output' in chunk and chunk['output']:
+                    # 直接yield每个token/字符
+                    yield chunk['output']
+                elif 'messages' in chunk:
+                    # 处理消息类型的chunk
+                    for msg in chunk['messages']:
+                        if hasattr(msg, 'content') and msg.content:
+                            yield msg.content
+
+        except Exception as e:
+            agent_logger.error(f"异步流式对话执行出错: {e}")
+            yield "老夫此时无法为你算卦，请稍后再试。"
+
     def run(self, query: str) -> Dict[str, Any]:
         """运行算命师对话"""
         try:

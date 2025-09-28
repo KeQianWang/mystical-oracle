@@ -76,7 +76,6 @@ class ChatService:
         }
         yield f"data: {final_data}\n\n"
 
-    # ==================== 工具函数 ====================
     @staticmethod
     def prepare_chat_context(chat_request: ChatRequest, db: Session, current_user: UserResponse) -> tuple[str, Master]:
         """

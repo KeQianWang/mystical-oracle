@@ -29,7 +29,7 @@ class BotConfig:
     OPENAI_API_BASE: Optional[str] = os.getenv("OPENAI_API_BASE")
     OPENAI_MODEL: Optional[str] = os.getenv("OPENAI_MODEL")
 
-    OLLAMA_EMBEDDINGS: Optional[str] = os.getenv("OLLAMA_EMBEDDINGS")
+    OLLAMA_EMBEDDINGS: Optional[str] = os.getenv("EMBEDDING_MODEL_NAME")
     OPEN_AI_EMBEDDINGS: Optional[str] = os.getenv("OPEN_AI_EMBEDDINGS")
 
     # === 存储配置 ===

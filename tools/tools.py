@@ -38,7 +38,7 @@ def search(query: str) -> str:
 @tool
 def get_info_from_knowledge( query: str,callbacks: Optional[CallbackManagerForToolRun] = None) -> str:
     """
-    只有回答资产,公司，2023年，宏图科技发展有限公司相关问题，会使用这个工具
+    只有回答华润电力相关问题，会使用这个工具
     """
     session_id = callbacks.metadata['session_id']
     knowledge_result = knowledge_service.search_user_knowledge(query, session_id)

@@ -47,21 +47,17 @@ async def process_websocket_message(
         master = Master(session_id=session_id, user_id=current_user.id)
         result = master.run(query)
 
-        # 生成唯一 ID 用于音频文件
-        unique_id = str(uuid.uuid4())
-
         # 后台任务：语音合成（WebSocket中异步处理）
         if result.get("output") and enable_tts:
             asyncio.create_task(
                 master.synthesize_speech_background(
                     result["output"],
-                    unique_id
+                    session_id
                 )
             )
 
         return {
             "msg": result.get("output", "无法获取回复"),
-            "id": unique_id,
             "session_id": session_id,
             "mood": master.get_current_mood(),
             "voice_style": master.get_voice_style()

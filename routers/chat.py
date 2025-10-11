@@ -2,7 +2,6 @@
 聊天接口路由器
 包含主要的对话功能接口
 """
-import uuid
 from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks, Query
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
@@ -27,28 +26,24 @@ def chat(
 ):
     """与算命师对话，支持语音合成"""
     try:
-        session_id, master = ChatService.prepare_chat_context(chat_request, db, current_user)
+        context, master = ChatService.prepare_chat_context(chat_request, db, current_user)
 
         # 执行对话
         result = master.run(chat_request.query)
-
-        # 唯一 ID
-        unique_id = str(uuid.uuid4())
 
         # 后台执行 TTS
         if result.get("output") and chat_request.enable_tts:
             background_tasks.add_task(
                 master.synthesize_speech_background,
                 result["output"],
-                unique_id,
+                context.session_id,
             )
 
         return {
             "msg": result.get("output", "无法获取回复"),
-            "id": unique_id,
-            "session_id": session_id,
-            "mood": master.get_current_mood(),
-            "voice_style": master.get_voice_style(),
+            "session_id": context.session_id,
+            "mood": context.mood,
+            "voice_style": context.voice_style,
         }
 
     except Exception as e:
@@ -65,28 +60,23 @@ async def chat_stream(
 ):
     """与算命师流式对话 (支持同步/异步两种模式)"""
     try:
-        session_id, master = ChatService.prepare_chat_context(chat_request, db, current_user)
-        unique_id = str(uuid.uuid4())
+        context, master = ChatService.prepare_chat_context(chat_request, db, current_user)
 
         if chat_request.async_mode:
             # 异步流
             result_generator = master.run_stream_async(chat_request.query)
-            stream_gen = ChatService.async_stream_response_generator(
+            stream_gen = ChatService.async_stream_response(
                 result_generator,
-                unique_id,
-                session_id,
-                master.get_current_mood(),
-                master.get_voice_style(),
+                db,
+                context
             )
         else:
             # 同步流
             result_generator = master.run_stream(chat_request.query)
-            stream_gen = ChatService.stream_response_generator(
+            stream_gen = ChatService.stream_response(
                 result_generator,
-                unique_id,
-                session_id,
-                master.get_current_mood(),
-                master.get_voice_style(),
+                db,
+                context
             )
 
         return StreamingResponse(stream_gen, media_type="text/event-stream", headers=ChatService.sse_headers())

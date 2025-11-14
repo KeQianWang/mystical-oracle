@@ -23,7 +23,7 @@ class BotConfig:
 
     # === 模型配置 ===
     OLLAMA_BASE_URL: Optional[str] = os.getenv("OLLAMA_BASE_URL")
-    OLLAMA_MODEL_NAME: Optional[str] = os.getenv("OLLAMA_MODEL_NAME")
+    OLLAMA_MODEL_NAME: Optional[str] = os.getenv("CHAT_MODEL_NAME")
 
     OPENAI_API_KEY: Optional[str] = os.getenv("OPENAI_API_KEY")
     OPENAI_API_BASE: Optional[str] = os.getenv("OPENAI_API_BASE")

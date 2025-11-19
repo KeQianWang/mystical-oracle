@@ -11,17 +11,26 @@ from services.chat_history_service import ChatHistoryService
 from services.session_service import SessionService
 from utils.helpers import validate_user_input
 from config.logger import server_logger
+from prompts.mood_prompts import MoodPrompts
 
 
 class ChatContext:
     """封装聊天上下文信息，避免参数过多"""
-    def __init__(self, user_id, session_id, mood, voice_style, query):
+    def __init__(self, user_id, session_id, query, master=None):
         self.user_id = user_id
         self.session_id = session_id
-        self.mood = mood
-        self.voice_style = voice_style
         self.query = query
+        self._master = master
 
+    @property
+    def mood(self):
+        """动态获取当前mood，确保返回的是分析后的最终mood"""
+        return self._master.get_current_mood() if self._master else MoodPrompts.get_default_mood()
+
+    @property
+    def voice_style(self):
+        """动态获取当前voice_style，确保返回的是分析后最终的voice_style"""
+        return self._master.get_voice_style() if self._master else "chat"
 
 class ChatService:
     """聊天服务类"""
@@ -112,9 +121,8 @@ class ChatService:
         context = ChatContext(
             user_id=current_user.id,
             session_id=chat_request.session_id,
-            mood=master.get_current_mood(),
-            voice_style=master.get_voice_style(),
             query=chat_request.query,
+            master=master
         )
 
         return context, master

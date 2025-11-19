@@ -11,8 +11,8 @@ from langchain_openai import OpenAIEmbeddings, ChatOpenAI
 
 from config.logger import logger
 
-# 加载 .env 文件
-load_dotenv()
+# 加载 .env 文件 override=True 会让 python-dotenv 用文件里的值覆盖内存里的旧值。
+load_dotenv(override=True)
 
 class BotConfig:
     """机器人配置类"""

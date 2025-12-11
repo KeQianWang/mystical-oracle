@@ -38,7 +38,7 @@ def search(query: str) -> str:
 @tool
 def get_info_from_knowledge( query: str,callbacks: Optional[CallbackManagerForToolRun] = None) -> str:
     """
-    只有回答华润电力相关问题，会使用这个工具
+    如果用户上传了文件或者输入了url，或者说了知识库，文件，url相关词汇，会使用这个工具
     """
     session_id = callbacks.metadata['session_id']
     knowledge_result = knowledge_service.search_user_knowledge(query, session_id)

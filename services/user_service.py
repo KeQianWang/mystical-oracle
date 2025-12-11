@@ -25,28 +25,27 @@ class UserService:
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="用户名已存在"
             )
-        
-        # 检查邮箱是否已存在
-        if db.query(User).filter(User.email == user_data.email).first():
+
+        # 检查手机号是否已存在
+        if db.query(User).filter(User.phone == user_data.phone).first():
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="邮箱已存在"
+                detail="手机号已存在"
             )
-        
+
         # 创建用户
         hashed_password = get_password_hash(user_data.password)
         db_user = User(
             username=user_data.username,
-            email=user_data.email,
+            phone=user_data.phone,
             password_hash=hashed_password,
-            nickname=user_data.nickname,
             created_at=datetime.now(timezone.utc)
         )
-        
+
         db.add(db_user)
         db.commit()
         db.refresh(db_user)
-        
+
         server_logger.info(f"用户创建成功: {user_data.username}")
         return db_user
     
@@ -80,7 +79,7 @@ class UserService:
         user.updated_at = datetime.now(timezone.utc)
         db.commit()
         db.refresh(user)
-        
+
         server_logger.info(f"用户信息更新成功: {user.username}")
         return user
     
@@ -161,7 +160,7 @@ class UserService:
             id=user.id,
             username=user.username,
             email=user.email,
-            nickname=user.nickname,
+            phone=user.phone,
             avatar_url=user.avatar_url,
             is_active=user.is_active,
             is_admin=user.is_admin,

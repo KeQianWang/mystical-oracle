@@ -3,8 +3,9 @@ Mystical Oracle User Model - 用户数据模型
 """
 from datetime import datetime
 from typing import Optional
-from pydantic import BaseModel, EmailStr, field_validator, constr, Field
+from pydantic import BaseModel, EmailStr, field_validator, constr, Field, ConfigDict
 from config.settings import config
+import re
 
 class User(BaseModel):
     """用户信息模型 - 用于八字查询"""
@@ -85,9 +86,18 @@ class User(BaseModel):
 class UserCreate(BaseModel):
     """用户注册模型"""
     username: constr(min_length=2, max_length=50)
-    email: str
     password: constr(min_length=6, max_length=100)
-    nickname: Optional[constr(max_length=50)] = None
+    phone: constr(min_length=11, max_length=20) = Field(example="13812345678")
+
+    @field_validator('phone')
+    @classmethod
+    def validate_phone(cls, v):
+        """验证手机号格式"""
+        # 简单的中国手机号验证
+        phone_pattern = re.compile(r'^1[3-9]\d{9}$')
+        if not phone_pattern.match(v):
+            raise ValueError('请输入有效的手机号码')
+        return v
 
 
 class UserLogin(BaseModel):
@@ -100,21 +110,21 @@ class UserResponse(BaseModel):
     """用户响应模型"""
     id: int
     username: str
-    email: str
-    nickname: Optional[str] = None
+    phone: str
+    email: Optional[str]
     avatar_url: Optional[str] = None
     is_active: bool
     is_admin: bool
     created_at: datetime
     last_login_at: Optional[datetime] = None
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class UserUpdate(BaseModel):
     """用户更新模型"""
-    nickname: Optional[constr(max_length=50)] = None
+    username: Optional[constr(max_length=50)] = None
+    email: Optional[EmailStr] = None
     avatar_url: Optional[str] = None
 
 
@@ -154,6 +164,6 @@ class ChatSessionResponse(BaseModel):
 class ChatRequest(BaseModel):
     """聊天请求模型"""
     query: str
-    session_id: Optional[str] = None
+    session_id: Optional[str] = ""
     enable_tts: bool = False
     async_mode: bool = False

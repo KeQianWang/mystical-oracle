@@ -15,12 +15,12 @@ Base = declarative_base()
 class User(Base):
     """用户表"""
     __tablename__ = "users"
-    
+
     id = Column(Integer, primary_key=True, index=True)
     username = Column(String(50), unique=True, index=True, nullable=False, comment="用户名")
-    email = Column(String(100), unique=True, index=True, nullable=False, comment="邮箱")
+    email = Column(String(100), unique=True, index=True, nullable=True, comment="邮箱")
+    phone = Column(String(20), unique=True, index=True, nullable=False, comment="手机号")
     password_hash = Column(String(255), nullable=False, comment="密码哈希")
-    nickname = Column(String(50), nullable=True, comment="昵称")
     avatar_url = Column(String(255), nullable=True, comment="头像URL")
     is_active = Column(Boolean, default=True, comment="是否激活")
     is_admin = Column(Boolean, default=False, comment="是否管理员")

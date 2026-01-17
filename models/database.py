@@ -21,7 +21,7 @@ class User(Base):
     email = Column(String(100), unique=True, index=True, nullable=True, comment="邮箱")
     phone = Column(String(20), unique=True, index=True, nullable=False, comment="手机号")
     password_hash = Column(String(255), nullable=False, comment="密码哈希")
-    avatar_url = Column(String(255), nullable=True, comment="头像URL")
+    avatar_url = Column(Text, nullable=True, comment="头像URL")
     is_active = Column(Boolean, default=True, comment="是否激活")
     is_admin = Column(Boolean, default=False, comment="是否管理员")
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), comment="创建时间")

@@ -20,7 +20,7 @@ router = APIRouter(tags=["知识库管理"])
 async def add_knowledge(
     url: str = Form(None),
     file: UploadFile = File(None),
-    session_id: str = Form(None),
+    session_id: str = Form(...),
 ):
     """通用接口：添加 URL 或文件 到用户专属知识库（单 Collection）"""
     try:
@@ -34,3 +34,14 @@ async def add_knowledge(
         error_msg = format_error_message(e, "添加知识库内容")
         server_logger.error(error_msg)
         raise HTTPException(status_code=500, detail="添加知识库失败，请稍后再试")
+
+
+@router.get("/knowledge/{session_id}")
+async def get_knowledge(session_id: str):
+    """根据 session_id 查询当前知识库内容"""
+    try:
+        return knowledge_service.get_knowledge_by_session_id(session_id)
+    except Exception as e:
+        error_msg = format_error_message(e, "查询知识库内容")
+        server_logger.error(error_msg)
+        raise HTTPException(status_code=500, detail="查询知识库失败，请稍后再试")

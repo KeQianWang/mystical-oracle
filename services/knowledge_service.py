@@ -43,7 +43,7 @@ class KnowledgeService:
             elif ext in ["xls", "xlsx"]:
                 loader = UnstructuredExcelLoader(file_path, mode="elements")
             else:
-                raise HTTPException(status_code=400, detail="仅支持 docx, pdf, xlsx 文件")
+                raise HTTPException(status_code=400, detail=f"不支持的文件类型: .{ext}。仅支持 docx, pdf, xlsx 文件")
 
             return loader.load(), f"文件: {file.filename}"
 
@@ -72,6 +72,10 @@ class KnowledgeService:
 
     def add_to_qdrant(self, documents, session_id: str):
         """写入统一 Collection，按 session_id 区分"""
+        if not documents:
+            server_logger.warning(f"没有可添加的文档内容到知识库 for session_id={session_id} (可能文件为空或无法解析)")
+            return {"response": f"没有从文档中提取到有效内容，未向知识库添加任何数据。"}
+        
         try:
             embeddings = config.get_embedding_model()
 
@@ -98,7 +102,15 @@ class KnowledgeService:
 
     def process_file(self, file: UploadFile, session_id: str):
         """处理上传文件"""
-        docs, _ = self.load_from_file(file, session_id)
+        loaded_data = self.load_from_file(file, session_id)
+        if not loaded_data:
+            # load_from_file 内部已经记录了日志并处理了异常，这里直接向上抛出
+            raise HTTPException(status_code=500, detail="加载文件失败，请检查文件内容或格式")
+
+        docs, _ = loaded_data
+        if not docs:
+            raise HTTPException(status_code=400, detail="文件内容为空或无法解析")
+            
         documents = KnowledgeService.split_documents(docs)
         return self.add_to_qdrant(documents, session_id)
 
@@ -156,6 +168,48 @@ class KnowledgeService:
             server_logger.error(error_msg)
             raise HTTPException(status_code=500, detail="知识库检索失败")
 
+    def get_knowledge_by_session_id(self, session_id: str):
+        """根据 session_id 查询知识库内容"""
+        try:
+            embeddings = config.get_embedding_model()
+            qdrant = Qdrant.from_existing_collection(
+                embedding=embeddings,
+                path=self.BASE_QDRANT_DIR,
+                collection_name=self.COLLECTION_NAME
+            )
+            filter_condition = Filter(
+                must=[
+                    FieldCondition(
+                        key="metadata.session_id",
+                        match=MatchValue(value=session_id)
+                    )
+                ]
+            )
+            search_result = qdrant.client.scroll(
+                collection_name=self.COLLECTION_NAME,
+                scroll_filter=filter_condition,
+                limit=1000,
+                with_payload=True,
+                with_vectors=False
+            )
+
+            raw_sources = [point.payload['metadata']['source'] for point in search_result[0] if point.payload and 'metadata' in point.payload and 'source' in point.payload['metadata']]
+            
+            processed_sources = []
+            for source in raw_sources:
+                # 如果源是 URL，则直接添加
+                if source.startswith("http://") or source.startswith("https://"):
+                    processed_sources.append(source)
+                # 否则，假定为文件路径并提取文件名
+                else:
+                    processed_sources.append(os.path.basename(source))
+
+            return {"sources": list(set(processed_sources))} # 去重
+
+        except Exception as e:
+            error_msg = format_error_message(e, f"查询对话框 {session_id} 的知识库")
+            server_logger.error(error_msg)
+            raise HTTPException(status_code=500, detail="知识库查询失败")
 
     def delete_user_knowledge(self, session_id: str) -> dict:
         """删除用户专属向量数据库中的内容"""

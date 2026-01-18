@@ -57,7 +57,7 @@ class Master:
         tools = [search, get_info_from_knowledge, bazi_cesuan, yaoyigua, jiemeng]
         
         # 创建 Agent
-        agent = create_openai_tools_agent(self.chat_model, tools, prompt)
+        agent = create_openai_tools_agent(self.chat_model, tools, prompt, strict=True)
         
         # 创建 Agent 执行器
         agent_executor = AgentExecutor(

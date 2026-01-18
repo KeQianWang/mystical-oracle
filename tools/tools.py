@@ -68,11 +68,12 @@ def bazi_cesuan(query: str) -> str:
         )
         
         # 创建模型
-        model = config.get_model()
-        if isinstance(model, ChatOpenAI):
-            model.model_kwargs = {"response_format": {"type": "json_object"}}
-        elif isinstance(model, ChatOllama):
-            model.format = "json"  # ChatOllama 支持的参数
+        base_model = config.get_model()
+        # 用 bind 临时绑定添加json格式
+        if isinstance(base_model, ChatOpenAI):
+            model = base_model.bind(response_format={"type": "json_object"})
+        elif isinstance(base_model, ChatOllama):
+            model = base_model.bind(format="json") # ChatOllama 支持的参数
 
         # 构建处理链
         chain = prompt | model | parser

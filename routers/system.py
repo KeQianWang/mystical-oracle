@@ -13,7 +13,7 @@ router = APIRouter(tags=["系统接口"])
 @router.get("/")
 def get_root():
     """根路径"""
-    return {"response": "神秘预言师服务正在运行", "service": "Mystical Oracle"}
+    return {"response": "AI 卜卦服务正在运行", "service": "Mystical Oracle"}
 
 
 @router.get("/health")

@@ -1,5 +1,5 @@
 """
-Mystical Oracle Server - 神秘预言师 Web 服务器
+Mystical Oracle Server - AI 卜卦 Web 服务器
 使用配置管理和更好的错误处理，集成语音合成功能
 采用模块化路由器架构
 """
@@ -36,7 +36,7 @@ create_tables()
 # 创建 FastAPI 应用
 app = FastAPI(
     title="Mystical Oracle API",
-    description="神秘预言师 - 基于 LangChain 的智能算命师聊天机器人，支持语音合成",
+    description="AI 卜卦 - 基于 LangChain 的智能算命师聊天机器人，支持语音合成",
     version="1.0.0"
 )
 
@@ -54,7 +54,7 @@ app.include_router(sessions.router)
 if __name__ == '__main__':
     import uvicorn
     
-    server_logger.info("🔮 算命师机器人服务启动中...")
+    server_logger.info(f"🤖 算命师机器人服务启动中...")
     server_logger.info(f"📍 服务地址: http://localhost:8001")
     server_logger.info(f"🌐 API 文档: http://localhost:8001/docs")
     

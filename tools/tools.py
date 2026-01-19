@@ -1,5 +1,5 @@
 """
-Mystical Oracle Tools - 神秘预言师工具集
+Mystical Oracle Tools - AI 卜卦工具集
 使用配置管理和更好的错误处理
 """
 from typing import Optional

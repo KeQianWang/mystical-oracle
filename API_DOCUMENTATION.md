@@ -1,8 +1,8 @@
-# 神秘预言师 API 文档
+# AI 卜卦 API 文档
 
 ## 项目概述
 
-神秘预言师（Mystical Oracle）是一个基于 FastAPI 的 AI 算命聊天机器人后端服务，提供智能算命对话、语音合成、用户认证和会话管理等功能。
+AI 卜卦（Mystical Oracle）是一个基于 FastAPI 的 AI 算命聊天机器人后端服务，提供智能算命对话、语音合成、用户认证和会话管理等功能。
 
 **Base URL**: `http://localhost:8000` (开发环境)
 
@@ -48,7 +48,7 @@ Authorization: Bearer <access_token>
 **响应示例**:
 ```json
 {
-  "response": "神秘预言师服务正在运行",
+  "response": "AI 卜卦服务正在运行",
   "service": "Mystical Oracle"
 }
 ```

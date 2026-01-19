@@ -1,5 +1,5 @@
 services:
-  # 神秘预言师主应用（单实例版本）
+  # AI 卜卦主应用（单实例版本）
   mystical-oracle:
     build: .
     ports:

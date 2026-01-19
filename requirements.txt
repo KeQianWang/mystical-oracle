@@ -1,4 +1,4 @@
-# Mystical Oracle 神秘预言师 - Dependencies
+# Mystical Oracle AI 卜卦 - Dependencies
 # Core framework dependencies
 fastapi==0.116.1
 uvicorn==0.35.0

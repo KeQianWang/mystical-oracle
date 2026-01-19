@@ -20,7 +20,7 @@ services:
       timeout: 10s
       retries: 3
 
-  # 神秘预言师主应用实例1
+  # AI 卜卦主应用实例1
   mystical-oracle-1:
     build: .
     expose:
@@ -57,7 +57,7 @@ services:
       retries: 3
       start_period: 60s
 
-  # 神秘预言师主应用实例2 (备份)
+  # AI 卜卦主应用实例2 (备份)
   mystical-oracle-2:
     build: .
     expose:

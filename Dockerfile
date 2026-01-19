@@ -1,4 +1,4 @@
-# Mystical Oracle 神秘预言师 - Docker 配置
+# Mystical Oracle AI 卜卦 - Docker 配置
 FROM python:3.12.3-slim
 
 # 设置工作目录

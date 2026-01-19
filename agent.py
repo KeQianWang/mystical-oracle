@@ -1,5 +1,5 @@
 """
-Mystical Oracle Agent - 神秘预言师核心模块
+Mystical Oracle Agent - AI 卜卦核心模块
 将配置、提示词模板分离，提高代码可维护性，并集成语音合成功能
 """
 from typing import Optional, Dict, Any, AsyncGenerator, Generator
@@ -100,7 +100,7 @@ class Master:
 
         except Exception as e:
             agent_logger.error(f"流式对话执行出错: {e}")
-            yield "老夫此时无法为你算卦，请稍后再试。"
+            yield "稍等片刻，待老夫喝口茶水再来为你指点迷津。"
 
     async def run_stream_async(self, query: str) -> AsyncGenerator[str, None]:
         """异步流式运行算命师对话 - 字符级输出"""
@@ -128,7 +128,7 @@ class Master:
 
         except Exception as e:
             agent_logger.error(f"异步流式对话执行出错: {e}")
-            yield "老夫此时无法为你算卦，请稍后再试。"
+            yield "稍等片刻，待老夫喝口茶水再来为你指点迷津。"
 
     def run(self, query: str) -> Dict[str, Any]:
         """运行算命师对话"""
@@ -153,7 +153,7 @@ class Master:
             
         except Exception as e:
             agent_logger.error(f"对话执行出错: {e}")
-            return {"output": "老夫此时无法为你算卦，请稍后再试。"}
+            return {"output": "稍等片刻，待老夫喝口茶水再来为你指点迷津。"}
     
     def _save_chat_history(self, user_message: str, assistant_message: str) -> None:
         """保存聊天历史记录到数据库"""

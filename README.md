@@ -1,4 +1,4 @@
-# Mystical Oracle 神秘预言师
+# Mystical Oracle AI 卜卦
 
 <div align="center">
 
@@ -509,7 +509,7 @@ cp -r qdrant_data qdrant_backup
 
 <div align="center">
 
-**🔮 愿神秘预言师为您指引人生方向！**
+**🔮 愿AI 卜卦为您指引人生方向！**
 
 Made with ❤️ by Mystical Oracle Team
 

@@ -1,4 +1,4 @@
-# Docker 部署指南 - Mystical Oracle 神秘预言师
+# Docker 部署指南 - Mystical Oracle AI 卜卦
 
 ## 快速开始
 

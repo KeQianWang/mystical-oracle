@@ -5,6 +5,8 @@ from fastapi import HTTPException, UploadFile
 from langchain_community.document_loaders import WebBaseLoader, PyPDFLoader, Docx2txtLoader, UnstructuredExcelLoader
 from langchain_qdrant import Qdrant
 from langchain_text_splitters import RecursiveCharacterTextSplitter
+from qdrant_client import QdrantClient
+from qdrant_client.http import models as qdrant_models
 from qdrant_client.models import Filter, FieldCondition, MatchValue
 
 from config.settings import config
@@ -19,6 +21,28 @@ class KnowledgeService:
         self.BASE_UPLOAD_DIR = self.qdrant_config["base_upload_dir"]
         self.BASE_QDRANT_DIR = self.qdrant_config["path"]
         self.COLLECTION_NAME = self.qdrant_config["collection_name"]
+        self.embeddings = config.get_embedding_model()
+        self.qdrant_instance = self._get_or_create_qdrant_instance()
+
+    def _get_or_create_qdrant_instance(self):
+        """获取或创建 Qdrant 实例，并确保集合存在"""
+        client = QdrantClient(path=self.BASE_QDRANT_DIR)
+
+        try:
+            client.get_collection(collection_name=self.COLLECTION_NAME)
+        except Exception:
+            vector_size = len(self.embeddings.embed_query("test"))
+            client.create_collection(
+                collection_name=self.COLLECTION_NAME,
+                vectors_config=qdrant_models.VectorParams(size=vector_size, distance=qdrant_models.Distance.COSINE),
+            )
+            server_logger.info(f"Qdrant 集合 '{self.COLLECTION_NAME}' 已创建，因为它之前不存在。")
+
+        return Qdrant(
+            client=client,
+            collection_name=self.COLLECTION_NAME,
+            embeddings=self.embeddings
+        )
 
     def save_upload_file(self, file: UploadFile, session_id: str) -> str:
         """保存上传文件到用户目录"""
@@ -77,19 +101,12 @@ class KnowledgeService:
             return {"response": f"没有从文档中提取到有效内容，未向知识库添加任何数据。"}
         
         try:
-            embeddings = config.get_embedding_model()
-
             # 为每个文档添加 session_id 元数据
             for doc in documents:
                 doc.metadata["session_id"] = session_id
 
             # 添加文档到 Qdrant
-            Qdrant.from_documents(
-                documents,
-                embeddings,
-                path=self.BASE_QDRANT_DIR,
-                collection_name=self.COLLECTION_NAME
-            )
+            self.qdrant_instance.add_documents(documents)
 
             server_logger.info(f"数据已成功添加到对话框 {session_id} 的知识库 (collection:{self.COLLECTION_NAME})")
             return {"response": f"数据已成功添加到对话框 {session_id} 的知识库 (collection:{self.COLLECTION_NAME})"}
@@ -123,15 +140,6 @@ class KnowledgeService:
     def search_user_knowledge(self, query: str, session_id: str, k: int = 1) -> str:
         """在用户专属向量数据库中检索相关内容"""
         try:
-            embeddings = config.get_embedding_model()
-
-            # 创建 Qdrant 实例
-            qdrant = Qdrant.from_existing_collection(
-                embedding=embeddings,
-                path=self.BASE_QDRANT_DIR,
-                collection_name=self.COLLECTION_NAME
-            )
-
             # 使用过滤器只检索该用户的数据
             filter_condition = Filter(
                 must=[
@@ -143,7 +151,7 @@ class KnowledgeService:
             )
 
             # 执行相似性搜索
-            retriever = qdrant.as_retriever(
+            retriever = self.qdrant_instance.as_retriever(
                 search_type="similarity_score_threshold",  # 使用基于阈值的相似度搜索
                 search_kwargs={
                     "score_threshold": .5,  # 相似度阈值设为0.5
@@ -171,12 +179,6 @@ class KnowledgeService:
     def get_knowledge_by_session_id(self, session_id: str):
         """根据 session_id 查询知识库内容"""
         try:
-            embeddings = config.get_embedding_model()
-            qdrant = Qdrant.from_existing_collection(
-                embedding=embeddings,
-                path=self.BASE_QDRANT_DIR,
-                collection_name=self.COLLECTION_NAME
-            )
             filter_condition = Filter(
                 must=[
                     FieldCondition(
@@ -185,7 +187,7 @@ class KnowledgeService:
                     )
                 ]
             )
-            search_result = qdrant.client.scroll(
+            search_result = self.qdrant_instance.client.scroll(
                 collection_name=self.COLLECTION_NAME,
                 scroll_filter=filter_condition,
                 limit=1000,
@@ -214,15 +216,6 @@ class KnowledgeService:
     def delete_user_knowledge(self, session_id: str) -> dict:
         """删除用户专属向量数据库中的内容"""
         try:
-            embeddings = config.get_embedding_model()
-
-            # 创建 Qdrant 实例
-            qdrant = Qdrant.from_existing_collection(
-                embedding=embeddings,
-                path=self.BASE_QDRANT_DIR,
-                collection_name=self.COLLECTION_NAME
-            )
-
             # 构建过滤条件，匹配指定 session_id 的数据
             filter_condition = Filter(
                 must=[
@@ -235,7 +228,7 @@ class KnowledgeService:
 
             # 获取要删除的点ID
             # 注意：Qdrant 删除操作需要点ID，所以我们需要先查询再删除
-            search_result = qdrant.client.scroll(
+            search_result = self.qdrant_instance.client.scroll(
                 collection_name=self.COLLECTION_NAME,
                 scroll_filter=filter_condition,
                 limit=10000,  # 设置一个较大的限制以获取所有匹配项
@@ -248,7 +241,7 @@ class KnowledgeService:
 
             if point_ids:
                 # 执行删除操作
-                qdrant.client.delete(
+                self.qdrant_instance.client.delete(
                     collection_name=self.COLLECTION_NAME,
                     points_selector=point_ids
                 )

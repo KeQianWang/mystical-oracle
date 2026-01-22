@@ -3,7 +3,7 @@ import shutil
 
 from fastapi import HTTPException, UploadFile
 from langchain_community.document_loaders import WebBaseLoader, PyPDFLoader, Docx2txtLoader, UnstructuredExcelLoader
-from langchain_qdrant import Qdrant
+from langchain_qdrant import QdrantVectorStore
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from qdrant_client import QdrantClient
 from qdrant_client.http import models as qdrant_models
@@ -22,7 +22,6 @@ class KnowledgeService:
         self.BASE_QDRANT_DIR = self.qdrant_config["path"]
         self.COLLECTION_NAME = self.qdrant_config["collection_name"]
         self.embeddings = config.get_embedding_model()
-        self.qdrant_instance = self._get_or_create_qdrant_instance()
 
     def _get_or_create_qdrant_instance(self):
         """获取或创建 Qdrant 实例，并确保集合存在"""
@@ -38,10 +37,10 @@ class KnowledgeService:
             )
             server_logger.info(f"Qdrant 集合 '{self.COLLECTION_NAME}' 已创建，因为它之前不存在。")
 
-        return Qdrant(
+        return QdrantVectorStore(
             client=client,
             collection_name=self.COLLECTION_NAME,
-            embeddings=self.embeddings
+            embedding=self.embeddings
         )
 
     def save_upload_file(self, file: UploadFile, session_id: str) -> str:
@@ -105,8 +104,9 @@ class KnowledgeService:
             for doc in documents:
                 doc.metadata["session_id"] = session_id
 
+            qdrant_instance = self._get_or_create_qdrant_instance()
             # 添加文档到 Qdrant
-            self.qdrant_instance.add_documents(documents)
+            qdrant_instance.add_documents(documents)
 
             server_logger.info(f"数据已成功添加到对话框 {session_id} 的知识库 (collection:{self.COLLECTION_NAME})")
             return {"response": f"数据已成功添加到对话框 {session_id} 的知识库 (collection:{self.COLLECTION_NAME})"}
@@ -150,8 +150,9 @@ class KnowledgeService:
                 ]
             )
 
+            qdrant_instance = self._get_or_create_qdrant_instance()
             # 执行相似性搜索
-            retriever = self.qdrant_instance.as_retriever(
+            retriever = qdrant_instance.as_retriever(
                 search_type="similarity_score_threshold",  # 使用基于阈值的相似度搜索
                 search_kwargs={
                     "score_threshold": .5,  # 相似度阈值设为0.5
@@ -187,7 +188,8 @@ class KnowledgeService:
                     )
                 ]
             )
-            search_result = self.qdrant_instance.client.scroll(
+            qdrant_instance = self._get_or_create_qdrant_instance()
+            search_result = qdrant_instance.client.scroll(
                 collection_name=self.COLLECTION_NAME,
                 scroll_filter=filter_condition,
                 limit=1000,
@@ -226,9 +228,10 @@ class KnowledgeService:
                 ]
             )
 
+            qdrant_instance = self._get_or_create_qdrant_instance()
             # 获取要删除的点ID
             # 注意：Qdrant 删除操作需要点ID，所以我们需要先查询再删除
-            search_result = self.qdrant_instance.client.scroll(
+            search_result = qdrant_instance.client.scroll(
                 collection_name=self.COLLECTION_NAME,
                 scroll_filter=filter_condition,
                 limit=10000,  # 设置一个较大的限制以获取所有匹配项
@@ -241,7 +244,7 @@ class KnowledgeService:
 
             if point_ids:
                 # 执行删除操作
-                self.qdrant_instance.client.delete(
+                qdrant_instance.client.delete(
                     collection_name=self.COLLECTION_NAME,
                     points_selector=point_ids
                 )

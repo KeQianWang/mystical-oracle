@@ -11,6 +11,7 @@ from models.database import User
 from models.user import UserCreate, UserUpdate, UserResponse
 from services.auth import get_password_hash, verify_password
 from config.logger import server_logger
+from utils.avatar import compress_avatar_base64
 
 
 class UserService:
@@ -73,6 +74,9 @@ class UserService:
         
         # 更新用户信息
         update_data = user_data.model_dump(exclude_unset=True)
+        avatar_value = update_data.get("avatar_url")
+        if avatar_value:
+            update_data["avatar_url"] = compress_avatar_base64(avatar_value)
         for field, value in update_data.items():
             setattr(user, field, value)
         

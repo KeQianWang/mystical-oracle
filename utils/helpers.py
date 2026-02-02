@@ -42,7 +42,7 @@ def format_error_message(error: Exception, context: str = "") -> str:
     return f"发生错误 - {error_msg}"
 
 
-def validate_user_input(input_text: str, min_length: int = 1, max_length: int = 1000) -> bool:
+def validate_user_input(input_text: str, min_length: int = 1, max_length: int = 5000) -> bool:
     """
     验证用户输入
     

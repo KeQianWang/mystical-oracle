@@ -984,8 +984,14 @@ OPENAI_API_KEY=your-openai-api-key
 MODEL_NAME=gpt-4
 
 # TTS 配置（可选）
-TTS_ENABLED=true
-TTS_API_KEY=your-tts-api-key
+EDGE_TTS_VOICE=zh-CN-XiaoxiaoNeural
+EDGE_TTS_RATE=+0%
+EDGE_TTS_VOLUME=+0%
+EDGE_TTS_PITCH=+0Hz
+EDGE_TTS_PROXY=
+EDGE_TTS_MAX_CHARS=2000
+EDGE_TTS_TIMEOUT=60
+AUDIO_OUTPUT_DIR=./audio
 ```
 
 ### 12.2 开发调试

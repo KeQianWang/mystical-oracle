@@ -54,11 +54,8 @@ tenacity==9.1.2
 python-dateutil==2.9.0.post0
 
 # Optional dependencies
-# Azure Cognitive Services (for TTS if enabled)
-azure-cognitiveservices-speech==1.45.0
-
-# Text analysis (optional)
-azure-ai-textanalytics==5.3.0
+# edge-tts (for TTS if enabled)
+edge-tts==7.2.7
 
 # Async support
 anyio==4.9.0

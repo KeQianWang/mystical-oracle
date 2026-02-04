@@ -25,7 +25,13 @@ QDRANT_PATH=/app/qdrant_data
 # API 密钥（可选）
 SERPAPI_API_KEY=your_serpapi_key
 YUANFENJU_API_KEY=your_yuanfenju_key
-MICROSOFT_TTS_KEY=your_azure_tts_key
+EDGE_TTS_VOICE=zh-CN-XiaoxiaoNeural
+EDGE_TTS_RATE=+0%
+EDGE_TTS_VOLUME=+0%
+EDGE_TTS_PITCH=+0Hz
+EDGE_TTS_PROXY=
+EDGE_TTS_MAX_CHARS=2000
+EDGE_TTS_TIMEOUT=60
 ```
 
 ### 3. 启动服务

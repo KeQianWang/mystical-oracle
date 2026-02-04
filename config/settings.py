@@ -52,12 +52,15 @@ class BotConfig:
     # === API 配置 ===
     SERPAPI_API_KEY: Optional[str] = os.getenv("SERPAPI_API_KEY")
     YUANFENJU_API_KEY: Optional[str] = os.getenv("YUANFENJU_API_KEY")
-    MICROSOFT_TTS_KEY: Optional[str] = os.getenv("MICROSOFT_TTS_KEY")
 
     # === TTS 配置 ===
-    TTS_ENDPOINT: Optional[str] = os.getenv("TTS_ENDPOINT")
-    TTS_VOICE_NAME: Optional[str] = os.getenv("TTS_VOICE_NAME")
-    TTS_OUTPUT_FORMAT: Optional[str] = os.getenv("TTS_OUTPUT_FORMAT")
+    EDGE_TTS_VOICE: Optional[str] = os.getenv("EDGE_TTS_VOICE") or os.getenv("TTS_VOICE_NAME")
+    EDGE_TTS_RATE: Optional[str] = os.getenv("EDGE_TTS_RATE")
+    EDGE_TTS_VOLUME: Optional[str] = os.getenv("EDGE_TTS_VOLUME")
+    EDGE_TTS_PITCH: Optional[str] = os.getenv("EDGE_TTS_PITCH")
+    EDGE_TTS_PROXY: Optional[str] = os.getenv("EDGE_TTS_PROXY")
+    EDGE_TTS_MAX_CHARS: int = int(os.getenv("EDGE_TTS_MAX_CHARS", 2000))
+    EDGE_TTS_TIMEOUT: int = int(os.getenv("EDGE_TTS_TIMEOUT", 60))
     AUDIO_OUTPUT_DIR: Optional[str] = os.getenv("AUDIO_OUTPUT_DIR")
 
     YUANFENJU_ENDPOINTS = {
@@ -158,7 +161,7 @@ class BotConfig:
     @classmethod
     def validate_config(cls) -> bool:
         """验证关键配置完整性"""
-        required_keys = ["SERPAPI_API_KEY", "YUANFENJU_API_KEY", "MICROSOFT_TTS_KEY"]
+        required_keys = ["SERPAPI_API_KEY", "YUANFENJU_API_KEY"]
         missing = [key for key in required_keys if not os.getenv(key)]
         if missing:
             logger.warning(f"缺少环境变量: {', '.join(missing)}")

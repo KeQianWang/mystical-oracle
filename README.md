@@ -25,7 +25,7 @@
 
 ### 🎵 增强功能
 - 😊 **情绪感知系统**：分析用户情绪，动态调整回复风格
-- 🔊 **语音合成服务**：支持 Microsoft Azure TTS 文字转语音
+- 🔊 **语音合成服务**：支持 edge-tts 文字转语音
 - 💾 **会话记忆管理**：Redis 存储聊天历史，支持多轮对话
 - 🌐 **WebSocket 实时通信**：支持流式输出和实时交互
 
@@ -141,7 +141,16 @@ OLLAMA_EMBEDDINGS=nomic-embed-text
 # === API 密钥 ===
 SERPAPI_API_KEY=your_serpapi_key
 YUANFENJU_API_KEY=your_yuanfenju_key
-MICROSOFT_TTS_KEY=your_azure_tts_key
+
+# Edge TTS（无需 API Key）
+EDGE_TTS_VOICE=zh-CN-XiaoxiaoNeural
+EDGE_TTS_RATE=+0%
+EDGE_TTS_VOLUME=+0%
+EDGE_TTS_PITCH=+0Hz
+EDGE_TTS_PROXY=
+EDGE_TTS_MAX_CHARS=2000
+EDGE_TTS_TIMEOUT=60
+AUDIO_OUTPUT_DIR=./audio
 
 # === JWT 配置 ===
 JWT_SECRET_KEY=your_jwt_secret_key
@@ -321,11 +330,11 @@ server {
 - **语音适配**: 根据情绪选择不同的语音合成风格
 
 ### 🔊 语音合成服务
-基于Microsoft Azure TTS技术：
-- **多音色支持**: 提供多种语音角色选择
-- **情绪适配**: 根据对话内容自动调整语音参数
-- **高质量输出**: 支持多种音频格式和采样率
-- **流式生成**: 支持实时语音生成和流式传输
+基于 edge-tts：
+- **多音色支持**: 可选多种语音角色
+- **参数可调**: 支持语速/音量/音高调节
+- **无需 API Key**: 通过 edge-tts 直接调用
+- **本地存储**: 生成音频文件并保存到指定目录
 
 ## 开发指南
 
@@ -462,9 +471,10 @@ A: 在 `.env` 文件中配置相应的模型参数：
 
 ### Q: 语音合成不工作怎么办？
 A: 检查以下配置：
-1. `MICROSOFT_TTS_KEY` 是否正确配置
-2. 网络连接是否正常
-3. 音频输出目录权限是否正确
+1. 是否已安装 `edge-tts`（`pip install edge-tts`）
+2. `EDGE_TTS_VOICE` 是否有效（`edge-tts --list-voices` 查看）
+3. 网络连接是否正常
+4. 音频输出目录权限是否正确
 
 ### Q: 如何优化性能？
 A: 可以通过以下方式优化：

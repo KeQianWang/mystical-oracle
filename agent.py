@@ -285,11 +285,8 @@ class Master:
     
     async def synthesize_speech_background(self, text: str, uid: str) -> None:
         """统一的语音合成后台任务，支持同步和异步调用"""
-        if tts_service.is_available():
-            await tts_service.synthesize_speech(text, uid, self.current_mood)
-        else:
-            agent_logger.warning("TTS 服务不可用，跳过语音合成")
-    
+        await tts_service.synthesize_speech(text, uid, self.current_mood)
+
     def get_voice_style(self) -> str:
         """获取当前情绪对应的语音风格"""
         return MoodPrompts.get_voice_style(self.current_mood)

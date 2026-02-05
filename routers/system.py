@@ -20,11 +20,8 @@ def get_root():
 def health_check():
     """健康检查"""
     try:
-        from services.tts_service import tts_service
-
         # 检查配置
         config_valid = config.validate_config()
-        tts_available = tts_service.is_available()
         db_available = False
         
         # 检查数据库连接
@@ -36,12 +33,10 @@ def health_check():
         return {
             "status": "healthy" if config_valid and db_available else "warning",
             "config_valid": config_valid,
-            "tts_available": tts_available,
             "database_available": db_available,
             "version": "2.1.0",
             "features": {
                 "chat": True,
-                "tts": tts_available,
                 "knowledge_base": True,
                 "websocket": True,
                 "authentication": True

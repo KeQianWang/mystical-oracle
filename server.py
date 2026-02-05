@@ -25,7 +25,6 @@ from routers import (
     chat,
     chat_history,
     knowledge,
-    audio,
     websocket,
     sessions
 )
@@ -36,7 +35,7 @@ create_tables()
 # 创建 FastAPI 应用
 app = FastAPI(
     title="Mystical Oracle API",
-    description="AI 卜卦 - 基于 LangChain 的智能算命师聊天机器人，支持语音合成",
+    description="AI 卜卦 - 基于 LangChain 的智能算命师聊天机器人",
     version="1.0.0"
 )
 
@@ -46,7 +45,6 @@ app.include_router(auth.router)
 app.include_router(chat.router)
 app.include_router(chat_history.router)
 app.include_router(knowledge.router)
-app.include_router(audio.router)
 app.include_router(websocket.router)
 app.include_router(sessions.router)
 

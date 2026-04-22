@@ -66,8 +66,9 @@ class ChatService:
     # ======== 同步 / 异步流式生成 ========
 
     @classmethod
-    def stream_response(cls, result_generator, db: Session, context: ChatContext):
+    def stream_response(cls, result_generator, db: Session, context: ChatContext, master=None, enable_tts: bool = False):
         """同步流式SSE生成器"""
+        import asyncio
         full_response = ""
         for chunk in result_generator:
             if not chunk:
@@ -79,8 +80,12 @@ class ChatService:
         cls._save_history(db, context, full_response)
         yield cls._format_sse_event("complete", full_response, context)
 
+        if full_response and enable_tts and master:
+            loop = asyncio.get_event_loop()
+            loop.create_task(master.synthesize_speech_background(full_response, context.session_id))
+
     @classmethod
-    async def async_stream_response(cls, result_generator, db: Session, context: ChatContext):
+    async def async_stream_response(cls, result_generator, db: Session, context: ChatContext, master=None, enable_tts: bool = False):
         """异步流式SSE生成器"""
         full_response = ""
         async for chunk in result_generator:
@@ -92,6 +97,9 @@ class ChatService:
 
         cls._save_history(db, context, full_response)
         yield cls._format_sse_event("complete", full_response, context)
+
+        if full_response and enable_tts and master:
+            await master.synthesize_speech_background(full_response, context.session_id)
 
     # ======== 公共上下文准备 ========
 

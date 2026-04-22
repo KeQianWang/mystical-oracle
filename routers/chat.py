@@ -68,7 +68,9 @@ async def chat_stream(
             stream_gen = ChatService.async_stream_response(
                 result_generator,
                 db,
-                context
+                context,
+                master=master,
+                enable_tts=chat_request.enable_tts,
             )
         else:
             # 同步流
@@ -76,7 +78,9 @@ async def chat_stream(
             stream_gen = ChatService.stream_response(
                 result_generator,
                 db,
-                context
+                context,
+                master=master,
+                enable_tts=chat_request.enable_tts,
             )
 
         return StreamingResponse(stream_gen, media_type="text/event-stream", headers=ChatService.sse_headers())
